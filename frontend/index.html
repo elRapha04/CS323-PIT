@@ -1,0 +1,2071 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskFlow — Real-Time Collaborative Board</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap"
+    rel="stylesheet" />
+
+  <style>
+    /* ── CSS Variables ─────────────────────────────────────────────── */
+    :root {
+      --bg: #0d0f14;
+      --surface: #161920;
+      --surface2: #1e2230;
+      --surface3: #252a3a;
+      --border: #2a3045;
+      --border2: #3a4260;
+      --text: #e8eaf2;
+      --text2: #8892aa;
+      --text3: #555f78;
+      --accent: #5b7fff;
+      --accent2: #3d5edb;
+      --todo: #5b7fff;
+      --doing: #f5a623;
+      --done: #2dd87a;
+      --danger: #ff4d6a;
+      --glow: rgba(91, 127, 255, 0.18);
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    /* ── Reset ─────────────────────────────────────────────────────── */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      font-size: 15px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Login Screen ──────────────────────────────────────────────── */
+    #login-screen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      z-index: 1000;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    #login-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.96);
+    }
+
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      box-shadow: 0 0 80px rgba(91, 127, 255, 0.08);
+    }
+
+    .login-logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 2rem;
+      color: var(--text);
+      letter-spacing: -1px;
+      margin-bottom: 6px;
+    }
+
+    .login-logo span {
+      color: var(--accent);
+    }
+
+    .login-subtitle {
+      color: var(--text2);
+      font-size: 0.85rem;
+      margin-bottom: 36px;
+      line-height: 1.6;
+    }
+
+    .login-input {
+      width: 100%;
+      padding: 14px 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 1rem;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 14px;
+    }
+
+    .login-input:focus {
+      border-color: var(--accent);
+    }
+
+    .login-input::placeholder {
+      color: var(--text3);
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius-sm);
+      color: white;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .login-btn:hover {
+      background: var(--accent2);
+    }
+
+    .login-btn:active {
+      transform: scale(0.98);
+    }
+
+    .login-pdc-badge {
+      margin-top: 24px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 6px 14px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--text3);
+    }
+
+    .login-pdc-badge .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--done);
+      animation: pulse-dot 2s infinite;
+    }
+
+    /* ── Top Bar ───────────────────────────────────────────────────── */
+    #app {
+      display: none;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #app.visible {
+      display: flex;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      height: 58px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      z-index: 100;
+    }
+
+    .topbar-logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.2rem;
+      letter-spacing: -0.5px;
+    }
+
+    .topbar-logo span {
+      color: var(--accent);
+    }
+
+    .topbar-center {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 5px 12px;
+      font-size: 0.75rem;
+      color: var(--text2);
+      font-family: 'DM Mono', monospace;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--text3);
+      transition: background 0.3s;
+    }
+
+    .status-dot.connected {
+      background: var(--done);
+      animation: pulse-dot 2s infinite;
+    }
+
+    .status-dot.disconnected {
+      background: var(--danger);
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .online-avatars {
+      display: flex;
+      align-items: center;
+    }
+
+    .avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2px solid var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.7rem;
+      margin-left: -6px;
+      position: relative;
+    }
+
+    .avatar:first-child {
+      margin-left: 0;
+    }
+
+    .user-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 5px 14px 5px 6px;
+      font-size: 0.8rem;
+    }
+
+    .user-chip .avatar {
+      margin-left: 0;
+      width: 24px;
+      height: 24px;
+      font-size: 0.6rem;
+    }
+
+    /* ── Toolbar ───────────────────────────────────────────────────── */
+    .toolbar {
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+
+    .board-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--text);
+    }
+
+    .toolbar-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent2);
+      transform: translateY(-1px);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text2);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover {
+      background: var(--surface2);
+      color: var(--text);
+    }
+
+    /* ── Board Layout ─────────────────────────────────────────────── */
+    .board {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      /* align-items: stretch is default — columns fill the row height */
+      grid-template-rows: 1fr;
+      gap: 20px;
+      padding: 24px 28px;
+      min-height: 0;
+      /* Board area scrolls when tasks overflow the viewport height */
+      overflow-y: auto;
+    }
+
+    /* ── Column ───────────────────────────────────────────────────── */
+    .column {
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      /* Columns stretch to fill the full board height (not just their content).
+         This makes the entire column a valid drop target, not just the card area. */
+      min-height: 0;
+    }
+
+    .column.drag-over {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--glow);
+    }
+
+    .col-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 18px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .col-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .col-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .col-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.88rem;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+
+    .col-count {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--text3);
+      background: var(--surface2);
+      border-radius: 50px;
+      padding: 2px 9px;
+    }
+
+    .col-add-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.15s;
+    }
+
+    .col-add-btn:hover {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .col-body {
+      flex: 1;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      /* min-height ensures empty columns still have a visible drop area */
+      min-height: 120px;
+      /* col-body itself is the drag target via ondragover on .column —
+         making it flex: 1 means the whole blank space below cards is droppable */
+      overflow-y: auto;
+    }
+
+    /* ── Task Card ────────────────────────────────────────────────── */
+    .task-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      cursor: grab;
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+      position: relative;
+      /* Do NOT use overflow:hidden here — it clips the box-shadow on hover
+         and can clip absolutely-positioned child elements.
+         The ::before left-bar uses border-radius so it stays contained. */
+      animation: card-in 0.25s ease;
+    }
+
+    .task-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      border-radius: 3px 0 0 3px;
+      background: var(--card-color, var(--accent));
+    }
+
+    .task-card:hover {
+      border-color: var(--border2);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+    }
+
+    .task-card.dragging {
+      opacity: 0.4;
+      cursor: grabbing;
+    }
+
+    .task-card.updated-flash {
+      animation: flash-update 0.6s ease;
+    }
+
+    .task-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+      min-width: 0;
+    }
+
+    .task-title {
+      font-weight: 500;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      color: var(--text);
+      flex: 1;
+      min-width: 0;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .task-actions {
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.15s;
+      flex-shrink: 0;
+      align-self: flex-start;
+    }
+
+    .task-card:hover .task-actions {
+      opacity: 1;
+    }
+
+    .task-action-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 5px;
+      background: var(--surface3);
+      border: none;
+      color: var(--text2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.75rem;
+      transition: all 0.1s;
+    }
+
+    .task-action-btn:hover {
+      background: var(--border2);
+      color: var(--text);
+    }
+
+    .task-action-btn.danger:hover {
+      background: var(--danger);
+      color: white;
+    }
+
+    .task-desc {
+      font-size: 0.8rem;
+      color: var(--text2);
+      line-height: 1.5;
+      margin-bottom: 10px;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .task-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-width: 0;
+      gap: 6px;
+    }
+
+    .task-meta {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--text3);
+      /* Prevent meta from pushing avatar off-screen */
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .task-avatar {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.55rem;
+    }
+
+    /* ── Activity Feed ────────────────────────────────────────────── */
+    .activity-panel {
+      width: 280px;
+      min-width: 280px;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .activity-header {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.88rem;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text2);
+    }
+
+    .activity-header .live-indicator {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--done);
+      animation: pulse-dot 2s infinite;
+    }
+
+    .activity-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .activity-item {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      animation: slide-in-right 0.25s ease;
+    }
+
+    .activity-icon {
+      width: 28px;
+      height: 28px;
+      min-width: 28px;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+    }
+
+    .activity-content {
+      flex: 1;
+    }
+
+    .activity-text {
+      font-size: 0.78rem;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .activity-text strong {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .activity-time {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--text3);
+      margin-top: 2px;
+    }
+
+    /* ── Main Content Area ─────────────────────────────────────────── */
+    .main-area {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .board-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    /* ── Modal ─────────────────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      /* Allow overlay to scroll on very short screens */
+      overflow-y: auto;
+      padding: 16px;
+      z-index: 500;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 32px;
+      width: 100%;
+      max-width: 460px;
+      /* Constrain height so the modal never exceeds the viewport */
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+      transform: scale(0.95);
+      transition: transform 0.2s;
+      /* Ensure it sits on top of the overlay scroll area */
+      margin: auto;
+    }
+
+    .modal-overlay.open .modal {
+      transform: scale(1);
+    }
+
+    .modal-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 22px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--text2);
+      margin-bottom: 7px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-input,
+    .form-textarea,
+    .form-select {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus,
+    .form-textarea:focus,
+    .form-select:focus {
+      border-color: var(--accent);
+    }
+
+    .form-textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .form-select {
+      appearance: none;
+      cursor: pointer;
+    }
+
+    .color-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .color-swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.1s, border-color 0.1s;
+    }
+
+    .color-swatch:hover {
+      transform: scale(1.15);
+    }
+
+    .color-swatch.active {
+      border-color: white;
+      transform: scale(1.15);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 22px;
+    }
+
+    .btn-danger {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid var(--danger);
+    }
+
+    .btn-danger:hover {
+      background: var(--danger);
+      color: white;
+    }
+
+    /* ── Toast Notifications ───────────────────────────────────────── */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 9999;
+    }
+
+    .toast {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      font-size: 0.82rem;
+      min-width: 260px;
+      max-width: 340px;
+      animation: toast-in 0.3s ease;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .toast.exiting {
+      animation: toast-out 0.3s ease forwards;
+    }
+
+    .toast-icon {
+      font-size: 1rem;
+    }
+
+    .toast-msg {
+      flex: 1;
+      color: var(--text);
+    }
+
+    /* ── Stats Bar ─────────────────────────────────────────────────── */
+    .stats-bar {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 10px 28px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--text3);
+      flex-shrink: 0;
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .stat-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+
+    /* ── Drag Ghost ────────────────────────────────────────────────── */
+    .drop-placeholder {
+      background: var(--surface3);
+      border: 2px dashed var(--border2);
+      border-radius: var(--radius);
+      height: 60px;
+      opacity: 0.6;
+    }
+
+    /* ── Scrollbar ─────────────────────────────────────────────────── */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border2);
+      border-radius: 10px;
+    }
+
+    /* ── Animations ───────────────────────────────────────────────── */
+    @keyframes pulse-dot {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.5;
+        transform: scale(0.85);
+      }
+    }
+
+    @keyframes card-in {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slide-in-right {
+      from {
+        opacity: 0;
+        transform: translateX(12px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes toast-in {
+      from {
+        opacity: 0;
+        transform: translateX(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes toast-out {
+      from {
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      to {
+        opacity: 0;
+        transform: translateX(20px);
+      }
+    }
+
+    @keyframes flash-update {
+      0% {
+        box-shadow: 0 0 0 0 rgba(91, 127, 255, 0);
+      }
+
+      30% {
+        box-shadow: 0 0 0 6px rgba(91, 127, 255, 0.35);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(91, 127, 255, 0);
+      }
+    }
+
+    /* ── Empty State ───────────────────────────────────────────────── */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 16px;
+      color: var(--text3);
+      font-size: 0.82rem;
+      text-align: center;
+      gap: 8px;
+    }
+
+    .empty-state span:first-child {
+      font-size: 1.5rem;
+    }
+
+    /* ── Responsive ────────────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .activity-panel {
+        display: none;
+      }
+
+      .board {
+        grid-template-columns: 1fr;
+        /* On mobile, columns stack so the grid needs auto rows to size by content */
+        grid-template-rows: auto;
+        align-items: start;
+      }
+
+      /* On mobile, columns shrink to their content height since they're stacked */
+      .column {
+        min-height: 200px;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .board {
+        padding: 12px;
+        gap: 12px;
+      }
+
+      .topbar {
+        padding: 0 16px;
+      }
+
+      .toolbar {
+        padding: 10px 16px;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .stats-bar {
+        padding: 8px 16px;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ══════════════════════════════════════════════════════
+     LOGIN SCREEN
+══════════════════════════════════════════════════════ -->
+  <div id="login-screen">
+    <div class="login-card">
+      <div class="login-logo">Task<span>Flow</span></div>
+      <p class="login-subtitle">
+        Real-Time Collaborative Board<br />
+        <small style="color: var(--text3);">PDC Project — WebSockets + Redis Pub/Sub</small>
+      </p>
+      <input type="text" id="username-input" class="login-input" placeholder="Enter your username..." maxlength="20"
+        autocomplete="off" />
+      <button class="login-btn" onclick="joinBoard()">Join Board →</button>
+      <div class="login-pdc-badge">
+        <span class="dot"></span>
+        WebSocket · Redis Pub/Sub · asyncio · SQLite
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+     MAIN APP
+══════════════════════════════════════════════════════ -->
+  <div id="app">
+
+    <!-- Top Bar -->
+    <div class="topbar">
+      <div class="topbar-logo">Task<span>Flow</span></div>
+      <div class="topbar-center">
+        <div class="status-badge">
+          <span class="status-dot" id="ws-status-dot"></span>
+          <span id="ws-status-text">Connecting...</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="online-avatars" id="online-avatars"></div>
+        <div class="user-chip" id="user-chip"></div>
+      </div>
+    </div>
+
+    <div class="main-area">
+      <div class="board-area">
+        <!-- Toolbar -->
+        <div class="toolbar">
+          <div class="board-title">📋 Team Board</div>
+          <div class="toolbar-actions">
+            <button class="btn btn-ghost" onclick="openNewTaskModal('todo')">
+              ＋ New Task
+            </button>
+            <button class="btn btn-ghost" onclick="refreshBoard()">
+              ↺ Sync
+            </button>
+          </div>
+        </div>
+
+        <!-- Kanban Board -->
+        <div class="board" id="board">
+          <!-- To Do Column -->
+          <div class="column" id="col-todo" ondragover="onDragOver(event, 'todo')" ondragleave="onDragLeave(event)"
+            ondrop="onDrop(event, 'todo')">
+            <div class="col-header">
+              <div class="col-title-group">
+                <span class="col-dot" style="background: var(--todo)"></span>
+                <span class="col-title" style="color: var(--todo)">To Do</span>
+                <span class="col-count" id="count-todo">0</span>
+              </div>
+              <button class="col-add-btn" onclick="openNewTaskModal('todo')" title="Add task">+</button>
+            </div>
+            <div class="col-body" id="body-todo"></div>
+          </div>
+
+          <!-- In Progress Column -->
+          <div class="column" id="col-doing" ondragover="onDragOver(event, 'doing')" ondragleave="onDragLeave(event)"
+            ondrop="onDrop(event, 'doing')">
+            <div class="col-header">
+              <div class="col-title-group">
+                <span class="col-dot" style="background: var(--doing)"></span>
+                <span class="col-title" style="color: var(--doing)">In Progress</span>
+                <span class="col-count" id="count-doing">0</span>
+              </div>
+              <button class="col-add-btn" onclick="openNewTaskModal('doing')" title="Add task">+</button>
+            </div>
+            <div class="col-body" id="body-doing"></div>
+          </div>
+
+          <!-- Done Column -->
+          <div class="column" id="col-done" ondragover="onDragOver(event, 'done')" ondragleave="onDragLeave(event)"
+            ondrop="onDrop(event, 'done')">
+            <div class="col-header">
+              <div class="col-title-group">
+                <span class="col-dot" style="background: var(--done)"></span>
+                <span class="col-title" style="color: var(--done)">Done</span>
+                <span class="col-count" id="count-done">0</span>
+              </div>
+              <button class="col-add-btn" onclick="openNewTaskModal('done')" title="Add task">+</button>
+            </div>
+            <div class="col-body" id="body-done"></div>
+          </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar" id="stats-bar">
+          <div class="stat-item">
+            <span class="stat-dot" style="background: var(--accent)"></span>
+            <span id="stat-total">0 tasks</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-dot" style="background: var(--done)"></span>
+            <span id="stat-clients">0 online</span>
+          </div>
+          <div class="stat-item">
+            <span id="stat-redis">⬡ Redis: —</span>
+          </div>
+          <div class="stat-item" style="margin-left: auto">
+            <span id="stat-time" style="color: var(--text3)"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Panel -->
+      <div class="activity-panel">
+        <div class="activity-header">
+          <span class="live-indicator"></span>
+          Live Activity
+        </div>
+        <div class="activity-list" id="activity-list">
+          <div class="empty-state">
+            <span>📡</span>
+            <span>Waiting for events...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+     TASK MODAL (Create / Edit)
+══════════════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="task-modal">
+    <div class="modal">
+      <div class="modal-title" id="modal-title">New Task</div>
+      <div class="form-group">
+        <label class="form-label">Title *</label>
+        <input type="text" class="form-input" id="task-title" placeholder="What needs to be done?" maxlength="80" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-textarea" id="task-desc" placeholder="Add more details..." rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Column</label>
+        <select class="form-select" id="task-column">
+          <option value="todo">To Do</option>
+          <option value="doing">In Progress</option>
+          <option value="done">Done</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Color</label>
+        <div class="color-row" id="color-swatches"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" id="modal-save-btn" onclick="saveTask()">Create Task</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+
+  <!-- Confirmation Modal -->
+  <div class="modal-overlay" id="confirm-modal">
+    <div class="modal" style="max-width: 400px;">
+      <div class="modal-title" id="confirm-title">Confirm</div>
+
+      <div id="confirm-message" style="color: var(--text2); line-height: 1.6; margin-bottom: 24px;">
+        Are you sure?
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="confirm-cancel-btn">
+          Cancel
+        </button>
+
+        <button class="btn btn-danger" id="confirm-ok-btn">
+          Confirm
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════════ -->
+  <script>
+    /* ─────────────────────────────────────────────────────
+       Configuration
+    ───────────────────────────────────────────────────── */
+    const API = window.location.origin;
+    const WS_BASE = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host;
+
+    const COLORS = ['#5b7fff', '#f5a623', '#2dd87a', '#ff4d6a', '#c47aff', '#00d4ff', '#ff6b35', '#ffd93d'];
+    const COLUMNS = ['todo', 'doing', 'done'];
+
+    /* ─────────────────────────────────────────────────────
+       State
+    ───────────────────────────────────────────────────── */
+    let currentUser = '';
+    let ws = null;
+    let tasks = {};           // id -> task object
+    let dragTaskId = null;
+    let editingTaskId = null;
+    let selectedColor = COLORS[0];
+    let reconnectTimer = null;
+    let reconnectAttempts = 0;
+    let statsInterval = null;
+    let initialTaskData = null;
+    let modalDirty = false;
+
+    /* ─────────────────────────────────────────────────────
+       Login
+    ───────────────────────────────────────────────────── */
+    document.getElementById('username-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') joinBoard();
+    });
+
+    function joinBoard() {
+      const input = document.getElementById('username-input');
+      const name = input.value.trim();
+      if (!name) { input.focus(); shakeElement(input); return; }
+      currentUser = name;
+
+      document.getElementById('login-screen').classList.add('hidden');
+      const app = document.getElementById('app');
+      app.classList.add('visible');
+
+      // Set user chip
+      document.getElementById('user-chip').innerHTML = `
+      <div class="avatar" style="background: ${stringToColor(name)}">${name[0].toUpperCase()}</div>
+      <span>${name}</span>
+    `;
+
+      initColorSwatches();
+      fetchTasks();
+      connectWebSocket();
+      startStatsPoll();
+
+      // Update clock
+      setInterval(() => {
+        document.getElementById('stat-time').textContent = new Date().toLocaleTimeString();
+      }, 1000);
+    }
+
+    // -----------------
+    function captureModalState() {
+      return {
+        title: document.getElementById('task-title').value,
+        desc: document.getElementById('task-desc').value,
+        column: document.getElementById('task-column').value,
+        color: selectedColor
+      };
+    }
+
+    /* ─────────────────────────────────────────────────────
+       WebSocket Connection (Real-Time Layer)
+       PDC: Persistent connection for event-driven updates
+    ───────────────────────────────────────────────────── */
+    function connectWebSocket() {
+      const url = `${WS_BASE}/ws/${encodeURIComponent(currentUser)}`;
+      ws = new WebSocket(url);
+
+      ws.onopen = () => {
+        setStatus('connected', 'Live');
+        reconnectAttempts = 0;
+        if (reconnectTimer) clearTimeout(reconnectTimer);
+        // Keepalive ping every 25s
+        ws._pingInterval = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'PING' }));
+          }
+        }, 25000);
+      };
+
+      ws.onmessage = (e) => {
+        try {
+          const event = JSON.parse(e.data);
+          handleServerEvent(event);
+        } catch (err) {
+          console.warn('WS parse error:', err);
+        }
+      };
+
+      ws.onclose = () => {
+        setStatus('disconnected', 'Reconnecting...');
+        clearInterval(ws._pingInterval);
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 15000);
+        reconnectAttempts++;
+        reconnectTimer = setTimeout(connectWebSocket, delay);
+      };
+
+      ws.onerror = (e) => {
+        console.error('WS error:', e);
+        setStatus('disconnected', 'Error');
+      };
+    }
+
+    /* ─────────────────────────────────────────────────────
+       Event Handler — PDC: Event-Driven Architecture
+       All state changes arrive as events; UI reacts accordingly
+    ───────────────────────────────────────────────────── */
+    function handleServerEvent(event) {
+      console.log('[WS Event]', event.type, event);
+
+      switch (event.type) {
+
+        case 'TASK_CREATED':
+          const existingCard = document.getElementById(`task-${event.task.id}`);
+
+          // Prevent duplicate rendering
+          if (!existingCard) {
+            tasks[event.task.id] = event.task;
+            renderTask(event.task, true);
+          } else {
+            tasks[event.task.id] = event.task;
+            rerenderTask(event.task.id);
+          }
+
+          updateCounts();
+
+          if (event.actor !== currentUser) {
+            addActivity(
+              '➕',
+              event.actor,
+              `created "${event.task.title}"`,
+              'var(--todo)'
+            );
+
+            showToast(
+              '➕',
+              `${event.actor} created a task`,
+              event.task.title
+            );
+
+            flashCard(event.task.id);
+          }
+          break;
+
+        case 'TASK_UPDATED':
+          if (tasks[event.task_id]) {
+            Object.assign(tasks[event.task_id], event.changes);
+            if (event.task) tasks[event.task_id] = event.task;
+            rerenderTask(event.task_id);
+            if (event.actor !== currentUser) {
+              addActivity('✏️', event.actor, `edited "${tasks[event.task_id]?.title}"`, 'var(--accent)');
+              showToast('✏️', `${event.actor} updated a task`);
+              flashCard(event.task_id);
+            }
+          }
+          break;
+
+        case 'TASK_MOVED':
+          if (tasks[event.task_id]) {
+            const oldCol = tasks[event.task_id].column;
+            tasks[event.task_id].column = event.column;
+            if (event.task) tasks[event.task_id] = event.task;
+            moveCardDOM(event.task_id, event.column);
+            updateCounts();
+            if (event.actor !== currentUser) {
+              const label = { todo: 'To Do', doing: 'In Progress', done: 'Done' };
+              addActivity('🔀', event.actor, `moved "${tasks[event.task_id]?.title}" → ${label[event.column]}`, 'var(--doing)');
+              showToast('🔀', `${event.actor} moved a task`, label[event.column]);
+            }
+          }
+          break;
+
+        case 'TASK_DELETED':
+          if (tasks[event.task_id]) {
+            const title = tasks[event.task_id].title;
+            delete tasks[event.task_id];
+            removeCardDOM(event.task_id);
+            updateCounts();
+            if (event.actor !== currentUser) {
+              addActivity('🗑️', event.actor, `deleted "${title}"`, 'var(--danger)');
+              showToast('🗑️', `${event.actor} deleted a task`);
+            }
+          }
+          break;
+
+        case 'USER_JOINED':
+          updateOnlineUsers(event.online_users);
+          if (event.username !== currentUser) {
+            addActivity('👋', event.username, 'joined the board', 'var(--done)');
+            showToast('👋', `${event.username} joined`);
+          }
+          break;
+
+        case 'USER_LEFT':
+          updateOnlineUsers(event.online_users);
+          if (event.username !== currentUser) {
+            addActivity('🚪', event.username, 'left the board', 'var(--text3)');
+          }
+          break;
+
+        case 'PONG':
+          // Keepalive confirmed
+          break;
+
+        default:
+          console.log('Unknown event:', event.type);
+      }
+    }
+
+    /* ─────────────────────────────────────────────────────
+       Data Fetching
+    ───────────────────────────────────────────────────── */
+    async function fetchTasks() {
+      try {
+        const res = await fetch(`${API}/api/tasks`);
+        const data = await res.json();
+        tasks = {};
+        data.tasks.forEach(t => tasks[t.id] = t);
+        renderAllTasks();
+        updateCounts();
+      } catch (e) {
+        showToast('⚠️', 'Failed to load tasks');
+        console.error(e);
+      }
+    }
+
+    async function refreshBoard() {
+      await fetchTasks();
+      showToast('↺', 'Board synced');
+    }
+
+    function startStatsPoll() {
+      statsInterval = setInterval(async () => {
+        try {
+          const res = await fetch(`${API}/api/stats`);
+          const data = await res.json();
+          document.getElementById('stat-total').textContent = `${data.total_tasks} tasks`;
+          document.getElementById('stat-clients').textContent = `${data.connected_clients} online`;
+          document.getElementById('stat-redis').textContent = data.redis_connected
+            ? '⬡ Redis: Connected' : '⬡ Redis: Local mode';
+          updateOnlineUsers(data.online_users || []);
+        } catch (e) { }
+      }, 5000);
+    }
+
+    /* ─────────────────────────────────────────────────────
+       Rendering
+    ───────────────────────────────────────────────────── */
+    function renderAllTasks() {
+      ['todo', 'doing', 'done'].forEach(col => {
+        document.getElementById(`body-${col}`).innerHTML = '';
+      });
+      Object.values(tasks).forEach(t => renderTask(t, false));
+      showEmptyStates();
+    }
+
+    function renderTask(task, animate = true) {
+      const col = task.column || 'todo';
+      const body = document.getElementById(`body-${col}`);
+
+      if (!body) return;
+
+      // Prevent duplicate cards
+      const existing = document.getElementById(`task-${task.id}`);
+
+      if (existing) {
+        existing.remove();
+      }
+
+      // Remove empty state
+      const emptyEl = body.querySelector('.empty-state');
+      if (emptyEl) emptyEl.remove();
+
+      const card = buildCardElement(task);
+
+      if (!animate) {
+        card.style.animation = 'none';
+      }
+
+      body.appendChild(card);
+
+      showEmptyStates();
+    }
+
+    function buildCardElement(task) {
+      const div = document.createElement('div');
+      div.className = 'task-card';
+      div.id = `task-${task.id}`;
+      div.dataset.taskId = task.id;
+      div.draggable = true;
+      div.style.setProperty('--card-color', task.color || '#5b7fff');
+
+      div.addEventListener('dragstart', e => onDragStart(e, task.id));
+      div.addEventListener('dragend', onDragEnd);
+
+      const initials = (task.created_by || 'A')[0].toUpperCase();
+      const date = new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+      div.innerHTML = `
+      <div class="task-header">
+        <div class="task-title">${escHtml(task.title)}</div>
+        <div class="task-actions">
+          <button class="task-action-btn" onclick="openEditModal('${task.id}')" title="Edit">✎</button>
+          <button class="task-action-btn danger" onclick="deleteTask('${task.id}')" title="Delete">✕</button>
+        </div>
+      </div>
+      ${task.description ? `<div class="task-desc">${escHtml(task.description)}</div>` : ''}
+      <div class="task-footer">
+        <span class="task-meta">${date}</span>
+        <div class="task-avatar" style="background: ${stringToColor(task.created_by || 'A')}" title="${escHtml(task.created_by || 'A')}">
+          ${initials}
+        </div>
+      </div>
+    `;
+      return div;
+    }
+
+    function rerenderTask(taskId) {
+      const existing = document.getElementById(`task-${taskId}`);
+      if (!existing || !tasks[taskId]) return;
+      const newCard = buildCardElement(tasks[taskId]);
+      newCard.style.animation = 'none';
+      existing.replaceWith(newCard);
+      flashCard(taskId);
+    }
+
+    function moveCardDOM(taskId, newColumn) {
+      const card = document.getElementById(`task-${taskId}`);
+      const newBody = document.getElementById(`body-${newColumn}`);
+      if (!card || !newBody) return;
+
+      const emptyEl = newBody.querySelector('.empty-state');
+      if (emptyEl) emptyEl.remove();
+
+      newBody.appendChild(card);
+      card.style.animation = 'card-in 0.25s ease';
+      showEmptyStates();
+      flashCard(taskId);
+    }
+
+    function removeCardDOM(taskId) {
+      const card = document.getElementById(`task-${taskId}`);
+      if (card) {
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.9)';
+        card.style.transition = 'all 0.2s';
+        setTimeout(() => {
+          card.remove();
+          showEmptyStates();
+        }, 200);
+      }
+    }
+
+    function showEmptyStates() {
+      ['todo', 'doing', 'done'].forEach(col => {
+        const body = document.getElementById(`body-${col}`);
+        const hasTasks = body.querySelectorAll('.task-card').length > 0;
+        const hasEmpty = body.querySelector('.empty-state');
+        if (!hasTasks && !hasEmpty) {
+          const labels = { todo: 'No tasks yet', doing: 'Nothing in progress', done: 'Nothing done yet' };
+          const emptyEl = document.createElement('div');
+          emptyEl.className = 'empty-state';
+          emptyEl.innerHTML = `<span>🌑</span><span>${labels[col]}</span>`;
+          body.appendChild(emptyEl);
+        } else if (hasTasks && hasEmpty) {
+          hasEmpty.remove();
+        }
+      });
+    }
+
+    function updateCounts() {
+      const counts = { todo: 0, doing: 0, done: 0 };
+      Object.values(tasks).forEach(t => {
+        counts[t.column] = (counts[t.column] || 0) + 1;
+      });
+      COLUMNS.forEach(col => {
+        const el = document.getElementById(`count-${col}`);
+        if (el) el.textContent = counts[col] || 0;
+      });
+      document.getElementById('stat-total').textContent = `${Object.keys(tasks).length} tasks`;
+    }
+
+    /* ─────────────────────────────────────────────────────
+       Drag & Drop
+    ───────────────────────────────────────────────────── */
+    function onDragStart(e, taskId) {
+      dragTaskId = taskId;
+      e.currentTarget.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', taskId);
+    }
+
+    function onDragEnd(e) {
+      e.currentTarget.classList.remove('dragging');
+      document.querySelectorAll('.column').forEach(col => col.classList.remove('drag-over'));
+    }
+
+    function onDragOver(e, column) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      document.querySelectorAll('.column').forEach(c => c.classList.remove('drag-over'));
+      document.getElementById(`col-${column}`).classList.add('drag-over');
+    }
+
+    function onDragLeave(e) {
+      // Only remove drag-over when the cursor truly leaves the column element,
+      // not when it moves between child elements (cards, col-body, etc.).
+      // relatedTarget is where the cursor is going; if it's still inside the
+      // column, we keep the highlight.
+      if (e.currentTarget.contains(e.relatedTarget)) return;
+      e.currentTarget.classList.remove('drag-over');
+    }
+
+    async function onDrop(e, column) {
+      e.preventDefault();
+      document.querySelectorAll('.column').forEach(c => c.classList.remove('drag-over'));
+      const taskId = dragTaskId || e.dataTransfer.getData('text/plain');
+      if (!taskId || !tasks[taskId]) return;
+      if (tasks[taskId].column === column) return;
+
+      try {
+        await fetch(`${API}/api/tasks/${taskId}/move?username=${encodeURIComponent(currentUser)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ column }),
+        });
+        // Optimistic local update (server will also broadcast)
+        tasks[taskId].column = column;
+        moveCardDOM(taskId, column);
+        updateCounts();
+        addActivity('🔀', 'You', `moved "${tasks[taskId]?.title}"`, 'var(--doing)');
+      } catch (e) {
+        showToast('⚠️', 'Move failed', 'Please try again');
+      }
+      dragTaskId = null;
+    }
+
+    /* ─────────────────────────────────────────────────────
+       Task CRUD
+    ───────────────────────────────────────────────────── */
+    function openNewTaskModal(col = 'todo') {
+      editingTaskId = null;
+      document.getElementById('modal-title').textContent = 'New Task';
+      document.getElementById('modal-save-btn').textContent = 'Create Task';
+      document.getElementById('task-title').value = '';
+      document.getElementById('task-desc').value = '';
+      document.getElementById('task-column').value = col;
+      selectedColor = COLORS[0];
+      updateColorSwatches();
+      document.getElementById('task-modal').classList.add('open');
+      setTimeout(() => document.getElementById('task-title').focus(), 100);
+
+      initialTaskData = captureModalState();
+      modalDirty = false;
+    }
+
+    function checkModalDirty() {
+      const current = JSON.stringify(captureModalState());
+      const initial = JSON.stringify(initialTaskData);
+      modalDirty = current !== initial;
+    }
+
+    function openEditModal(taskId) {
+      const task = tasks[taskId];
+      if (!task) return;
+      editingTaskId = taskId;
+      document.getElementById('modal-title').textContent = 'Edit Task';
+      document.getElementById('modal-save-btn').textContent = 'Save Changes';
+      document.getElementById('task-title').value = task.title;
+      document.getElementById('task-desc').value = task.description || '';
+      document.getElementById('task-column').value = task.column;
+      selectedColor = task.color || COLORS[0];
+      updateColorSwatches();
+      document.getElementById('task-modal').classList.add('open');
+      setTimeout(() => document.getElementById('task-title').focus(), 100);
+
+      initialTaskData = captureModalState();
+      modalDirty = false;
+    }
+
+    function closeModal() {
+
+      if (modalDirty) {
+
+        openConfirmModal({
+
+          title: 'Unsaved Changes',
+
+          message:
+            'You have unsaved changes. Save before closing?',
+
+          confirmText: 'Save',
+
+          cancelText: 'Discard',
+
+          onConfirm: async () => {
+
+            await saveTask();
+
+          },
+
+          onCancel: () => {
+
+            modalDirty = false;
+
+            document
+              .getElementById('task-modal')
+              .classList.remove('open');
+          }
+        });
+
+        return;
+      }
+
+      document
+        .getElementById('task-modal')
+        .classList.remove('open');
+    }
+
+    async function saveTask() {
+      const title = document.getElementById('task-title').value.trim();
+      if (!title) {
+        shakeElement(document.getElementById('task-title'));
+        return;
+      }
+      const desc = document.getElementById('task-desc').value.trim();
+      const column = document.getElementById('task-column').value;
+
+      if (editingTaskId) {
+        // Update
+        try {
+          await fetch(`${API}/api/tasks/${editingTaskId}?username=${encodeURIComponent(currentUser)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, description: desc, color: selectedColor }),
+          });
+          // Optimistic update
+          Object.assign(tasks[editingTaskId], { title, description: desc, color: selectedColor });
+          rerenderTask(editingTaskId);
+          if (tasks[editingTaskId].column !== column) {
+            await fetch(`${API}/api/tasks/${editingTaskId}/move?username=${encodeURIComponent(currentUser)}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ column }),
+            });
+          }
+          addActivity('✏️', 'You', `edited "${title}"`, 'var(--accent)');
+        } catch (e) { showToast('⚠️', 'Update failed'); }
+      } else {
+        // Create
+        try {
+          await fetch(`${API}/api/tasks?username=${encodeURIComponent(currentUser)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title,
+              description: desc,
+              column,
+              color: selectedColor
+            }),
+          });
+
+          addActivity(
+            '➕',
+            'You',
+            `created "${title}"`,
+            'var(--todo)'
+          );
+
+        } catch (e) {
+          showToast('⚠️', 'Create failed');
+        }
+      }
+      modalDirty = false;
+      initialTaskData = null;
+
+      document
+        .getElementById('task-modal')
+        .classList.remove('open');
+
+      document
+        .getElementById('confirm-modal')
+        .classList.remove('open');
+    }
+
+    async function deleteTask(taskId) {
+
+      const task = tasks[taskId];
+
+      if (!task) return;
+
+      openConfirmModal({
+        title: 'Delete Task',
+        message: `Delete "${task.title}"? This cannot be undone.`,
+        confirmText: 'Delete',
+        danger: true,
+
+        async onConfirm() {
+
+          try {
+
+            await fetch(
+              `${API}/api/tasks/${taskId}?username=${encodeURIComponent(currentUser)}`,
+              {
+                method: 'DELETE',
+              }
+            );
+
+            const title = tasks[taskId]?.title || 'Task';
+
+            delete tasks[taskId];
+
+            removeCardDOM(taskId);
+
+            updateCounts();
+
+            addActivity(
+              '🗑️',
+              'You',
+              `deleted "${title}"`,
+              'var(--danger)'
+            );
+
+          } catch (e) {
+
+            showToast('⚠️', 'Delete failed');
+
+          }
+        }
+      });
+    }
+
+    /* ─────────────────────────────────────────────────────
+       UI Helpers
+    ───────────────────────────────────────────────────── */
+    function setStatus(state, text) {
+      const dot = document.getElementById('ws-status-dot');
+      const label = document.getElementById('ws-status-text');
+      dot.className = `status-dot ${state}`;
+      label.textContent = text;
+    }
+
+    function updateOnlineUsers(users) {
+      const container = document.getElementById('online-avatars');
+      const unique = [...new Set(users)].slice(0, 6);
+      container.innerHTML = unique.map(u => `
+      <div class="avatar" style="background: ${stringToColor(u)}" title="${escHtml(u)}">
+        ${u[0].toUpperCase()}
+      </div>
+    `).join('');
+      document.getElementById('stat-clients').textContent = `${unique.length} online`;
+    }
+
+    function addActivity(icon, actor, text, color) {
+      const list = document.getElementById('activity-list');
+      const emptyState = list.querySelector('.empty-state');
+      if (emptyState) emptyState.remove();
+
+      const item = document.createElement('div');
+      item.className = 'activity-item';
+      const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      item.innerHTML = `
+      <div class="activity-icon" style="background: ${color}22; color: ${color}">${icon}</div>
+      <div class="activity-content">
+        <div class="activity-text"><strong>${escHtml(actor)}</strong> ${escHtml(text)}</div>
+        <div class="activity-time">${time}</div>
+      </div>
+    `;
+      list.insertBefore(item, list.firstChild);
+      // Keep last 50 events
+      while (list.children.length > 50) list.removeChild(list.lastChild);
+    }
+
+    function showToast(icon, msg, sub = '') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `
+      <span class="toast-icon">${icon}</span>
+      <span class="toast-msg">${escHtml(msg)}${sub ? ` <span style="color: var(--text2); font-size: 0.75em">— ${escHtml(sub)}</span>` : ''}</span>
+    `;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.add('exiting');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    function flashCard(taskId) {
+      const card = document.getElementById(`task-${taskId}`);
+      if (!card) return;
+      card.classList.remove('updated-flash');
+      void card.offsetWidth; // reflow
+      card.classList.add('updated-flash');
+    }
+
+    function shakeElement(el) {
+      el.style.animation = 'none';
+      el.style.borderColor = 'var(--danger)';
+      setTimeout(() => {
+        el.style.animation = '';
+        el.style.borderColor = '';
+      }, 600);
+    }
+
+    function initColorSwatches() {
+      const container = document.getElementById('color-swatches');
+      container.innerHTML = COLORS.map(c => `
+      <div class="color-swatch ${c === selectedColor ? 'active' : ''}"
+           style="background: ${c}"
+           onclick="selectColor('${c}')"></div>
+    `).join('');
+    }
+
+    function updateColorSwatches() {
+      document.querySelectorAll('.color-swatch').forEach(el => {
+        el.classList.toggle('active', el.style.background === selectedColor ||
+          el.style.backgroundColor === selectedColor);
+      });
+      initColorSwatches();
+    }
+
+    function selectColor(color) {
+      selectedColor = color;
+      updateColorSwatches();
+      checkModalDirty();
+    }
+
+    function stringToColor(str) {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      const hue = Math.abs(hash) % 360;
+      return `hsl(${hue}, 55%, 45%)`;
+    }
+
+    function escHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // Close modal on overlay click
+    document.getElementById('task-modal').addEventListener('click', function (e) {
+      if (e.target === this) closeModal();
+    });
+
+    // Enter key in title
+    document.getElementById('task-title')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') saveTask();
+    });
+
+    // Detect unsaved changes
+    ['task-title', 'task-desc', 'task-column'].forEach(id => {
+      document.getElementById(id).addEventListener('input', checkModalDirty);
+      document.getElementById(id).addEventListener('change', checkModalDirty);
+    });
+
+    // Color swatches init
+    initColorSwatches();
+    // ------------------------------------------
+    function openConfirmModal({
+      title = 'Confirm',
+      message = 'Are you sure?',
+      confirmText = 'Confirm',
+      cancelText = 'Cancel',
+      danger = false,
+      onConfirm = () => { },
+      onCancel = () => { }
+    }) {
+
+      const modal = document.getElementById('confirm-modal');
+
+      document.getElementById('confirm-title').textContent = title;
+      document.getElementById('confirm-message').textContent = message;
+
+      const okBtn = document.getElementById('confirm-ok-btn');
+      const cancelBtn = document.getElementById('confirm-cancel-btn');
+
+      okBtn.textContent = confirmText;
+      cancelBtn.textContent = cancelText;
+
+      okBtn.className = danger
+        ? 'btn btn-danger'
+        : 'btn btn-primary';
+
+      modal.classList.add('open');
+
+      okBtn.onclick = () => {
+        modal.classList.remove('open');
+        onConfirm();
+      };
+
+      cancelBtn.onclick = () => {
+        modal.classList.remove('open');
+        onCancel();
+      };
+
+      modal.onclick = (e) => {
+        if (e.target === modal) {
+          modal.classList.remove('open');
+          onCancel();
+        }
+      };
+    }
+  </script>
+</body>
+
+</html>
