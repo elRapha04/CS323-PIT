@@ -16,8 +16,6 @@ taskboard/
 │   └── requirements.txt     # Python dependencies
 ├── frontend/
 │   └── index.html           # Full SPA (HTML/CSS/JS, no framework needed)
-├── docs/
-│   └── pdc-explanation.md   # Academic PDC defense notes
 ├── Dockerfile               # Backend container
 ├── docker-compose.yml       # Full stack: backend + Redis
 ├── locustfile.py            # Stress testing
