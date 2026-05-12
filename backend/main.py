@@ -28,6 +28,8 @@ from database import (
     delete_task,
     move_task,
     get_task_by_id,
+    append_activity,
+    get_activity_history,
 )
 from connection_manager import ConnectionManager
 
@@ -53,6 +55,39 @@ manager = ConnectionManager()
 
 redis_pub: Optional[redis.Redis] = None
 redis_sub: Optional[redis.Redis] = None
+
+
+# ─────────────────────────────────────────────
+# Activity icon/color mapping helpers
+# ─────────────────────────────────────────────
+EVENT_META = {
+    "TASK_CREATED": ("➕", "var(--todo)"),
+    "TASK_UPDATED": ("✏️", "var(--accent)"),
+    "TASK_MOVED":   ("🔀", "var(--doing)"),
+    "TASK_DELETED": ("🗑️", "var(--danger)"),
+    "USER_JOINED":  ("👋", "var(--done)"),
+    "USER_LEFT":    ("🚪", "var(--text3)"),
+}
+
+
+def _activity_desc(event: dict) -> Optional[str]:
+    """Build a human-readable description string for an event."""
+    t = event.get("type")
+    actor = event.get("actor") or event.get("username") or "Unknown"
+    if t == "TASK_CREATED":
+        return f'{actor} created "{event.get("task", {}).get("title", "")}"'
+    if t == "TASK_UPDATED":
+        return f'{actor} edited task'
+    if t == "TASK_MOVED":
+        col_label = {"todo": "To Do", "doing": "In Progress", "done": "Done"}.get(event.get("column", ""), event.get("column", ""))
+        return f'{actor} moved task → {col_label}'
+    if t == "TASK_DELETED":
+        return f'{actor} deleted a task'
+    if t == "USER_JOINED":
+        return f'{actor} joined the board'
+    if t == "USER_LEFT":
+        return f'{actor} left the board'
+    return None
 
 
 # ─────────────────────────────────────────────
@@ -167,6 +202,21 @@ async def redis_subscriber():
 async def publish_event(event: dict):
     payload = json.dumps(event)
 
+    # Persist to activity history (skip non-user-facing events like PONG/CURSOR)
+    desc = _activity_desc(event)
+    if desc:
+        t = event.get("type", "")
+        icon, color = EVENT_META.get(t, ("📌", "var(--accent)"))
+        actor = event.get("actor") or event.get("username") or "Unknown"
+        await append_activity(
+            event_type=t,
+            actor=actor,
+            description=desc,
+            icon=icon,
+            color=color,
+            timestamp=event.get("timestamp", datetime.utcnow().isoformat()),
+        )
+
     if redis_pub:
         try:
             await redis_pub.publish(REDIS_CHANNEL, payload)
@@ -233,6 +283,7 @@ async def edit_task(task_id: str, update: TaskUpdate, username: str = "Anonymous
         "changes": changes,
         "task": updated,
         "actor": username,
+        "timestamp": changes["updated_at"],
     })
 
     return updated
@@ -244,11 +295,8 @@ async def move_task_endpoint(task_id: str, move: TaskMove, username: str = "Anon
     if not existing:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    updated = await move_task(
-        task_id,
-        move.column,
-        datetime.utcnow().isoformat(),
-    )
+    now = datetime.utcnow().isoformat()
+    updated = await move_task(task_id, move.column, now)
 
     await publish_event({
         "type": "TASK_MOVED",
@@ -256,6 +304,7 @@ async def move_task_endpoint(task_id: str, move: TaskMove, username: str = "Anon
         "column": move.column,
         "task": updated,
         "actor": username,
+        "timestamp": now,
     })
 
     return updated
@@ -267,12 +316,16 @@ async def remove_task(task_id: str, username: str = "Anonymous"):
     if not existing:
         raise HTTPException(status_code=404, detail="Task not found")
 
+    title = existing.get("title", "")
     await delete_task(task_id)
 
+    now = datetime.utcnow().isoformat()
     await publish_event({
         "type": "TASK_DELETED",
         "task_id": task_id,
+        "title": title,
         "actor": username,
+        "timestamp": now,
     })
 
     return {"deleted": True}
@@ -295,6 +348,13 @@ async def get_stats():
     }
 
 
+@app.get("/api/activity")
+async def get_activity(limit: int = 50):
+    """REST endpoint to fetch activity history (used on initial WS connect)."""
+    history = await get_activity_history(limit=min(limit, 100))
+    return {"history": history}
+
+
 # ─────────────────────────────────────────────
 # WebSocket
 # ─────────────────────────────────────────────
@@ -304,11 +364,23 @@ async def websocket_endpoint(websocket: WebSocket, username: str):
 
     await manager.connect(websocket, client_id, username)
 
+    # ── Send activity history to this new client BEFORE broadcasting join ──
+    try:
+        history = await get_activity_history(limit=50)
+        await websocket.send_text(json.dumps({
+            "type": "HISTORY_INIT",
+            "history": history,
+        }))
+    except Exception as e:
+        logger.warning(f"Failed to send history to {client_id}: {e}")
+
+    now = datetime.utcnow().isoformat()
     await publish_event({
         "type": "USER_JOINED",
         "username": username,
         "client_id": client_id,
         "online_users": manager.get_users(),
+        "timestamp": now,
     })
 
     try:
@@ -338,11 +410,13 @@ async def websocket_endpoint(websocket: WebSocket, username: str):
     except WebSocketDisconnect:
         manager.disconnect(client_id)
 
+        now = datetime.utcnow().isoformat()
         await publish_event({
             "type": "USER_LEFT",
             "username": username,
             "client_id": client_id,
             "online_users": manager.get_users(),
+            "timestamp": now,
         })
 
 

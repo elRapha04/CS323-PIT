@@ -14,6 +14,9 @@ logger = logging.getLogger("taskboard.db")
 
 DB_PATH = os.getenv("DB_PATH", "./taskboard.db")
 
+# Maximum activity history entries to persist
+MAX_HISTORY = 200
+
 
 async def init_db():
     """Initialize SQLite schema."""
@@ -28,6 +31,18 @@ async def init_db():
                 created_by TEXT DEFAULT 'Anonymous',
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
+            )
+        """)
+        # Activity history table — persists events so new joiners see past activity
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS activity_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                event_type TEXT NOT NULL,
+                actor TEXT NOT NULL,
+                description TEXT NOT NULL,
+                icon TEXT NOT NULL,
+                color TEXT NOT NULL,
+                timestamp TEXT NOT NULL
             )
         """)
         await db.commit()
@@ -77,7 +92,6 @@ async def create_task(task: Dict) -> Dict:
 
 async def update_task(task_id: str, changes: Dict) -> Optional[Dict]:
     """Update specific fields of a task."""
-    # Build dynamic SET clause
     set_parts = ", ".join(f"{k} = ?" for k in changes.keys())
     values = list(changes.values()) + [task_id]
 
@@ -108,3 +122,41 @@ async def delete_task(task_id: str) -> bool:
         cursor = await db.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
         await db.commit()
         return cursor.rowcount > 0
+
+
+# ─────────────────────────────────────────────
+# Activity History
+# ─────────────────────────────────────────────
+
+async def append_activity(event_type: str, actor: str, description: str, icon: str, color: str, timestamp: str):
+    """Persist one activity entry; prune oldest beyond MAX_HISTORY."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            """INSERT INTO activity_log (event_type, actor, description, icon, color, timestamp)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (event_type, actor, description, icon, color, timestamp),
+        )
+        # Keep only the latest MAX_HISTORY rows
+        await db.execute(
+            """DELETE FROM activity_log WHERE id NOT IN (
+                SELECT id FROM activity_log ORDER BY id DESC LIMIT ?
+            )""",
+            (MAX_HISTORY,),
+        )
+        await db.commit()
+
+
+async def get_activity_history(limit: int = 50) -> List[Dict]:
+    """Fetch recent activity history, oldest first (so client prepends correctly)."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            """SELECT event_type, actor, description, icon, color, timestamp
+               FROM activity_log
+               ORDER BY id DESC
+               LIMIT ?""",
+            (limit,),
+        ) as cursor:
+            rows = await cursor.fetchall()
+            cols = [d[0] for d in cursor.description]
+            # Reverse so oldest is first — client inserts in order
+            return [dict(zip(cols, row)) for row in reversed(rows)]

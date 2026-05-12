@@ -1,61 +1,136 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TaskFlow — Real-Time Collaborative Board</title>
+
+  <!--
+    ╔══════════════════════════════════════════════════════════════╗
+    ║  FONT SYSTEM — How to customize fonts                       ║
+    ║                                                              ║
+    ║  This app uses THREE font roles, each tied to a CSS var:    ║
+    ║                                                              ║
+    ║  --font-heading  → "Plus Jakarta Sans"  (headings, logos,   ║
+    ║                    column titles, modal titles)              ║
+    ║  --font-body     → "Inter"              (body text, buttons, ║
+    ║                    labels, descriptions)                     ║
+    ║  --font-mono     → "JetBrains Mono"     (timestamps, badges,║
+    ║                    stats bar, task meta)                     ║
+    ║                                                              ║
+    ║  To swap fonts:                                              ║
+    ║  1. Change the Google Fonts import href below                ║
+    ║  2. Update the --font-* variables in :root (CSS section)    ║
+    ║                                                              ║
+    ║  Recommended pairings:                                       ║
+    ║  • Heading: "Plus Jakarta Sans", "Outfit", "Manrope"        ║
+    ║  • Body:    "Inter", "DM Sans", "Nunito"                    ║
+    ║  • Mono:    "JetBrains Mono", "Fira Code", "IBM Plex Mono" ║
+    ╚══════════════════════════════════════════════════════════════╝
+  -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet" />
 
   <style>
-    /* ── CSS Variables ─────────────────────────────────────────────── */
+    /* ══════════════════════════════════════════════════════
+       FONT VARIABLES — Edit here to change fonts globally
+    ══════════════════════════════════════════════════════ */
     :root {
-      --bg: #0d0f14;
-      --surface: #161920;
-      --surface2: #1e2230;
-      --surface3: #252a3a;
-      --border: #2a3045;
-      --border2: #3a4260;
-      --text: #e8eaf2;
-      --text2: #8892aa;
-      --text3: #555f78;
-      --accent: #5b7fff;
-      --accent2: #3d5edb;
-      --todo: #5b7fff;
-      --doing: #f5a623;
-      --done: #2dd87a;
-      --danger: #ff4d6a;
-      --glow: rgba(91, 127, 255, 0.18);
-      --radius: 12px;
-      --radius-sm: 8px;
+      --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-body:    'Inter', system-ui, sans-serif;
+      --font-mono:    'JetBrains Mono', 'Fira Code', monospace;
     }
 
-    /* ── Reset ─────────────────────────────────────────────────────── */
+    /* ══════════════════════════════════════════════════════
+       THEME SYSTEM — Dark (default) and Light
+       All colour decisions live here. Nothing is hardcoded.
+    ══════════════════════════════════════════════════════ */
+    :root,
+    [data-theme="dark"] {
+      --bg:       #0d0f14;
+      --surface:  #161920;
+      --surface2: #1e2230;
+      --surface3: #252a3a;
+      --border:   #2a3045;
+      --border2:  #3a4260;
+      --text:     #e8eaf2;
+      --text2:    #8892aa;
+      --text3:    #555f78;
+      --accent:   #5b7fff;
+      --accent2:  #3d5edb;
+      --todo:     #5b7fff;
+      --doing:    #f5a623;
+      --done:     #2dd87a;
+      --danger:   #ff4d6a;
+      --glow:     rgba(91, 127, 255, 0.18);
+      --shadow:   rgba(0, 0, 0, 0.35);
+
+      /* Theme toggle icon */
+      --theme-icon: '☀️';
+    }
+
+    [data-theme="light"] {
+      --bg:       #f4f5f9;
+      --surface:  #ffffff;
+      --surface2: #f0f1f6;
+      --surface3: #e4e6ef;
+      --border:   #d8dae8;
+      --border2:  #b8bcd0;
+      --text:     #1a1d2e;
+      --text2:    #5a607a;
+      --text3:    #9499b2;
+      --accent:   #4c6ef5;
+      --accent2:  #3756d6;
+      --todo:     #4c6ef5;
+      --doing:    #e8941a;
+      --done:     #1db85c;
+      --danger:   #e8304a;
+      --glow:     rgba(76, 110, 245, 0.15);
+      --shadow:   rgba(0, 0, 0, 0.10);
+
+      --theme-icon: '🌙';
+    }
+
+    /* ── Smooth theme transitions ──────────────────────────────── */
     *,
     *::before,
     *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      transition:
+        background-color 0.25s ease,
+        border-color 0.25s ease,
+        color 0.25s ease,
+        box-shadow 0.25s ease;
     }
 
-    html {
-      font-size: 15px;
+    /* But keep interactive transitions snappy */
+    button, .task-card, .btn, .color-swatch {
+      transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease,
+        transform 0.12s ease,
+        opacity 0.15s ease,
+        box-shadow 0.15s ease;
     }
+
+    html { font-size: 15px; }
 
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: var(--font-body);
       background: var(--bg);
       color: var(--text);
       height: 100vh;
       overflow: hidden;
     }
 
-    /* ── Login Screen ──────────────────────────────────────────────── */
+    /* ── Login Screen ──────────────────────────────────────────── */
     #login-screen {
       position: fixed;
       inset: 0;
@@ -81,11 +156,11 @@
       width: 100%;
       max-width: 420px;
       text-align: center;
-      box-shadow: 0 0 80px rgba(91, 127, 255, 0.08);
+      box-shadow: 0 0 80px var(--glow);
     }
 
     .login-logo {
-      font-family: 'Syne', sans-serif;
+      font-family: var(--font-heading);
       font-weight: 800;
       font-size: 2rem;
       color: var(--text);
@@ -93,9 +168,7 @@
       margin-bottom: 6px;
     }
 
-    .login-logo span {
-      color: var(--accent);
-    }
+    .login-logo span { color: var(--accent); }
 
     .login-subtitle {
       color: var(--text2);
@@ -109,69 +182,56 @@
       padding: 14px 16px;
       background: var(--surface2);
       border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
+      border-radius: 10px;
       color: var(--text);
       font-size: 1rem;
-      font-family: 'Inter', sans-serif;
+      font-family: var(--font-body);
       outline: none;
-      transition: border-color 0.2s;
       margin-bottom: 14px;
     }
 
-    .login-input:focus {
-      border-color: var(--accent);
-    }
-
-    .login-input::placeholder {
-      color: var(--text3);
-    }
+    .login-input:focus { border-color: var(--accent); }
+    .login-input::placeholder { color: var(--text3); }
 
     .login-btn {
       width: 100%;
       padding: 14px;
       background: var(--accent);
       border: none;
-      border-radius: var(--radius-sm);
+      border-radius: 10px;
       color: white;
-      font-family: 'Syne', sans-serif;
+      font-family: var(--font-heading);
       font-weight: 700;
       font-size: 0.95rem;
       cursor: pointer;
-      letter-spacing: 0.5px;
-      transition: background 0.2s, transform 0.1s;
+      letter-spacing: 0.3px;
     }
 
-    .login-btn:hover {
-      background: var(--accent2);
-    }
-
-    .login-btn:active {
-      transform: scale(0.98);
-    }
+    .login-btn:hover { background: var(--accent2); }
+    .login-btn:active { transform: scale(0.98); }
 
     .login-pdc-badge {
       margin-top: 24px;
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: var(--surface3);
+      background: var(--surface2);
       border: 1px solid var(--border);
       border-radius: 50px;
       padding: 6px 14px;
-      font-family: 'DM Mono', monospace;
+      font-family: var(--font-mono);
       font-size: 0.72rem;
       color: var(--text3);
     }
 
     .login-pdc-badge .dot {
-      width: 6px;
-      height: 6px;
+      width: 6px; height: 6px;
       border-radius: 50%;
       background: var(--done);
       animation: pulse-dot 2s infinite;
     }
 
-    /* ── Top Bar ───────────────────────────────────────────────────── */
+    /* ── App Shell ─────────────────────────────────────────────── */
     #app {
       display: none;
       flex-direction: column;
@@ -179,37 +239,38 @@
       overflow: hidden;
     }
 
-    #app.visible {
-      display: flex;
-    }
+    #app.visible { display: flex; }
 
+    /* ── Top Bar ───────────────────────────────────────────────── */
     .topbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 28px;
+      padding: 0 24px;
       height: 58px;
       flex-shrink: 0;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
       z-index: 100;
+      gap: 12px;
     }
 
     .topbar-logo {
-      font-family: 'Syne', sans-serif;
+      font-family: var(--font-heading);
       font-weight: 800;
       font-size: 1.2rem;
       letter-spacing: -0.5px;
+      flex-shrink: 0;
     }
 
-    .topbar-logo span {
-      color: var(--accent);
-    }
+    .topbar-logo span { color: var(--accent); }
 
     .topbar-center {
       display: flex;
       align-items: center;
       gap: 10px;
+      flex: 1;
+      justify-content: center;
     }
 
     .status-badge {
@@ -220,17 +281,15 @@
       border: 1px solid var(--border);
       border-radius: 50px;
       padding: 5px 12px;
-      font-size: 0.75rem;
+      font-size: 0.73rem;
       color: var(--text2);
-      font-family: 'DM Mono', monospace;
+      font-family: var(--font-mono);
     }
 
     .status-dot {
-      width: 7px;
-      height: 7px;
+      width: 7px; height: 7px;
       border-radius: 50%;
       background: var(--text3);
-      transition: background 0.3s;
     }
 
     .status-dot.connected {
@@ -238,14 +297,64 @@
       animation: pulse-dot 2s infinite;
     }
 
-    .status-dot.disconnected {
-      background: var(--danger);
-    }
+    .status-dot.disconnected { background: var(--danger); }
 
     .topbar-right {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    /* Theme toggle button */
+    .theme-toggle {
+      width: 34px; height: 34px;
+      border-radius: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+    }
+
+    .theme-toggle:hover {
+      background: var(--surface3);
+      color: var(--text);
+    }
+
+    /* Activity toggle (mobile) */
+    .activity-toggle {
+      display: none;
+      width: 34px; height: 34px;
+      border-radius: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .activity-toggle .badge {
+      position: absolute;
+      top: -4px; right: -4px;
+      width: 14px; height: 14px;
+      background: var(--done);
+      border-radius: 50%;
+      border: 2px solid var(--surface);
+      font-size: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-family: var(--font-mono);
     }
 
     .online-avatars {
@@ -254,23 +363,20 @@
     }
 
     .avatar {
-      width: 30px;
-      height: 30px;
+      width: 30px; height: 30px;
       border-radius: 50%;
-      border: 2px solid var(--bg);
+      border: 2px solid var(--surface);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-family: 'Syne', sans-serif;
+      font-family: var(--font-heading);
       font-weight: 700;
       font-size: 0.7rem;
       margin-left: -6px;
       position: relative;
     }
 
-    .avatar:first-child {
-      margin-left: 0;
-    }
+    .avatar:first-child { margin-left: 0; }
 
     .user-chip {
       display: flex;
@@ -281,62 +387,51 @@
       border-radius: 50px;
       padding: 5px 14px 5px 6px;
       font-size: 0.8rem;
+      font-weight: 500;
     }
 
-    .user-chip .avatar {
-      margin-left: 0;
-      width: 24px;
-      height: 24px;
-      font-size: 0.6rem;
-    }
+    .user-chip .avatar { margin-left: 0; width: 24px; height: 24px; font-size: 0.6rem; }
 
-    /* ── Toolbar ───────────────────────────────────────────────────── */
+    /* ── Toolbar ───────────────────────────────────────────────── */
     .toolbar {
-      padding: 14px 28px;
+      padding: 12px 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid var(--border);
       background: var(--surface);
       flex-shrink: 0;
+      gap: 12px;
     }
 
     .board-title {
-      font-family: 'Syne', sans-serif;
+      font-family: var(--font-heading);
       font-weight: 700;
-      font-size: 1.1rem;
+      font-size: 1rem;
       color: var(--text);
     }
 
     .toolbar-actions {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       align-items: center;
     }
 
     .btn {
       display: inline-flex;
       align-items: center;
-      gap: 7px;
-      padding: 9px 16px;
-      border-radius: var(--radius-sm);
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 8px;
       font-size: 0.82rem;
-      font-family: 'Inter', sans-serif;
+      font-family: var(--font-body);
       font-weight: 500;
       cursor: pointer;
       border: none;
-      transition: all 0.15s;
     }
 
-    .btn-primary {
-      background: var(--accent);
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background: var(--accent2);
-      transform: translateY(-1px);
-    }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); }
 
     .btn-ghost {
       background: transparent;
@@ -344,35 +439,53 @@
       border: 1px solid var(--border);
     }
 
-    .btn-ghost:hover {
-      background: var(--surface2);
-      color: var(--text);
+    .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+
+    .btn-danger {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid var(--danger);
     }
 
-    /* ── Board Layout ─────────────────────────────────────────────── */
+    .btn-danger:hover { background: var(--danger); color: white; }
+
+    /* ── Main content area ─────────────────────────────────────── */
+    .main-area {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      min-height: 0;
+      position: relative;
+    }
+
+    .board-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    /* ── Board ─────────────────────────────────────────────────── */
     .board {
       flex: 1;
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      /* align-items: stretch is default — columns fill the row height */
       grid-template-rows: 1fr;
-      gap: 20px;
-      padding: 24px 28px;
+      gap: 18px;
+      padding: 20px 24px;
       min-height: 0;
-      /* Board area scrolls when tasks overflow the viewport height */
       overflow-y: auto;
     }
 
-    /* ── Column ───────────────────────────────────────────────────── */
+    /* ── Column ────────────────────────────────────────────────── */
     .column {
       display: flex;
       flex-direction: column;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 16px;
+      border-radius: 14px;
       overflow: hidden;
-      /* Columns stretch to fill the full board height (not just their content).
-         This makes the entire column a valid drop target, not just the card area. */
       min-height: 0;
     }
 
@@ -385,42 +498,37 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 18px 14px;
+      padding: 14px 16px 12px;
       border-bottom: 1px solid var(--border);
     }
 
     .col-title-group {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
-    .col-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-    }
+    .col-dot { width: 9px; height: 9px; border-radius: 50%; }
 
     .col-title {
-      font-family: 'Syne', sans-serif;
+      font-family: var(--font-heading);
       font-weight: 700;
-      font-size: 0.88rem;
-      letter-spacing: 0.3px;
+      font-size: 0.82rem;
+      letter-spacing: 0.5px;
       text-transform: uppercase;
     }
 
     .col-count {
-      font-family: 'DM Mono', monospace;
-      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      font-size: 0.70rem;
       color: var(--text3);
       background: var(--surface2);
       border-radius: 50px;
-      padding: 2px 9px;
+      padding: 2px 8px;
     }
 
     .col-add-btn {
-      width: 26px;
-      height: 26px;
+      width: 26px; height: 26px;
       border-radius: 6px;
       background: var(--surface2);
       border: 1px solid var(--border);
@@ -430,105 +538,81 @@
       justify-content: center;
       cursor: pointer;
       font-size: 1rem;
-      transition: all 0.15s;
     }
 
-    .col-add-btn:hover {
-      background: var(--accent);
-      color: white;
-      border-color: var(--accent);
-    }
+    .col-add-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
 
     .col-body {
       flex: 1;
-      padding: 12px;
+      padding: 10px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      /* min-height ensures empty columns still have a visible drop area */
+      gap: 8px;
       min-height: 120px;
-      /* col-body itself is the drag target via ondragover on .column —
-         making it flex: 1 means the whole blank space below cards is droppable */
       overflow-y: auto;
     }
 
-    /* ── Task Card ────────────────────────────────────────────────── */
+    /* ── Task Card ─────────────────────────────────────────────── */
     .task-card {
       background: var(--surface2);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px;
+      border-radius: 10px;
+      padding: 12px 14px;
       cursor: grab;
-      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
       position: relative;
-      /* Do NOT use overflow:hidden here — it clips the box-shadow on hover
-         and can clip absolutely-positioned child elements.
-         The ::before left-bar uses border-radius so it stays contained. */
       animation: card-in 0.25s ease;
     }
 
     .task-card::before {
       content: '';
       position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
+      left: 0; top: 8px; bottom: 8px;
       width: 3px;
-      border-radius: 3px 0 0 3px;
+      border-radius: 0 2px 2px 0;
       background: var(--card-color, var(--accent));
     }
 
     .task-card:hover {
       border-color: var(--border2);
       transform: translateY(-2px);
-      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 6px 20px var(--shadow);
     }
 
-    .task-card.dragging {
-      opacity: 0.4;
-      cursor: grabbing;
-    }
+    .task-card.dragging { opacity: 0.4; cursor: grabbing; }
 
-    .task-card.updated-flash {
-      animation: flash-update 0.6s ease;
-    }
+    .task-card.updated-flash { animation: flash-update 0.6s ease; }
 
     .task-header {
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
       gap: 8px;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       min-width: 0;
     }
 
     .task-title {
       font-weight: 500;
-      font-size: 0.9rem;
-      line-height: 1.4;
+      font-size: 0.88rem;
+      line-height: 1.45;
       color: var(--text);
       flex: 1;
       min-width: 0;
       word-break: break-word;
-      overflow-wrap: break-word;
     }
 
     .task-actions {
       display: flex;
-      gap: 4px;
+      gap: 3px;
       opacity: 0;
-      transition: opacity 0.15s;
       flex-shrink: 0;
       align-self: flex-start;
     }
 
-    .task-card:hover .task-actions {
-      opacity: 1;
-    }
+    .task-card:hover .task-actions { opacity: 1; }
 
     .task-action-btn {
-      width: 24px;
-      height: 24px;
+      width: 24px; height: 24px;
       border-radius: 5px;
       background: var(--surface3);
       border: none;
@@ -538,26 +622,17 @@
       justify-content: center;
       cursor: pointer;
       font-size: 0.75rem;
-      transition: all 0.1s;
     }
 
-    .task-action-btn:hover {
-      background: var(--border2);
-      color: var(--text);
-    }
-
-    .task-action-btn.danger:hover {
-      background: var(--danger);
-      color: white;
-    }
+    .task-action-btn:hover { background: var(--border2); color: var(--text); }
+    .task-action-btn.danger:hover { background: var(--danger); color: white; }
 
     .task-desc {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--text2);
       line-height: 1.5;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       word-break: break-word;
-      overflow-wrap: break-word;
     }
 
     .task-footer {
@@ -569,10 +644,9 @@
     }
 
     .task-meta {
-      font-family: 'DM Mono', monospace;
-      font-size: 0.68rem;
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
       color: var(--text3);
-      /* Prevent meta from pushing avatar off-screen */
       flex: 1;
       min-width: 0;
       overflow: hidden;
@@ -581,21 +655,20 @@
     }
 
     .task-avatar {
-      width: 20px;
-      height: 20px;
+      width: 20px; height: 20px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-family: 'Syne', sans-serif;
+      font-family: var(--font-heading);
       font-weight: 700;
       font-size: 0.55rem;
     }
 
-    /* ── Activity Feed ────────────────────────────────────────────── */
+    /* ── Activity Panel ────────────────────────────────────────── */
     .activity-panel {
-      width: 280px;
-      min-width: 280px;
+      width: 272px;
+      min-width: 272px;
       background: var(--surface);
       border-left: 1px solid var(--border);
       display: flex;
@@ -605,13 +678,13 @@
     }
 
     .activity-header {
-      padding: 16px 18px;
+      padding: 14px 16px;
       border-bottom: 1px solid var(--border);
-      font-family: 'Syne', sans-serif;
+      font-family: var(--font-heading);
       font-weight: 700;
-      font-size: 0.88rem;
+      font-size: 0.82rem;
       text-transform: uppercase;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.5px;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -619,138 +692,147 @@
     }
 
     .activity-header .live-indicator {
-      width: 7px;
-      height: 7px;
+      width: 7px; height: 7px;
       border-radius: 50%;
       background: var(--done);
       animation: pulse-dot 2s infinite;
     }
 
+    .activity-header .close-activity {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: var(--text3);
+      cursor: pointer;
+      font-size: 0.9rem;
+      display: none;
+      width: 24px; height: 24px;
+      border-radius: 5px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .activity-header .close-activity:hover { color: var(--text); background: var(--surface2); }
+
     .activity-list {
       flex: 1;
       overflow-y: auto;
-      padding: 12px;
+      padding: 10px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
     }
 
     .activity-item {
       display: flex;
-      gap: 10px;
+      gap: 9px;
       align-items: flex-start;
       animation: slide-in-right 0.25s ease;
     }
 
+    .activity-item.historical {
+      opacity: 0.65;
+    }
+
     .activity-icon {
-      width: 28px;
-      height: 28px;
-      min-width: 28px;
-      border-radius: 7px;
+      width: 26px; height: 26px;
+      min-width: 26px;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
     }
 
-    .activity-content {
-      flex: 1;
-    }
+    .activity-content { flex: 1; }
 
     .activity-text {
-      font-size: 0.78rem;
+      font-size: 0.77rem;
       color: var(--text);
       line-height: 1.4;
     }
 
-    .activity-text strong {
-      color: var(--accent);
-      font-weight: 600;
-    }
+    .activity-text strong { color: var(--accent); font-weight: 600; }
 
     .activity-time {
-      font-family: 'DM Mono', monospace;
-      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      font-size: 0.63rem;
       color: var(--text3);
       margin-top: 2px;
     }
 
-    /* ── Main Content Area ─────────────────────────────────────────── */
-    .main-area {
+    /* ── Stats Bar ─────────────────────────────────────────────── */
+    .stats-bar {
       display: flex;
-      flex: 1;
-      overflow: hidden;
-      min-height: 0;
+      align-items: center;
+      gap: 18px;
+      padding: 9px 24px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 0.70rem;
+      color: var(--text3);
+      flex-shrink: 0;
+      flex-wrap: wrap;
     }
 
-    .board-area {
-      flex: 1;
+    .stat-item {
       display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      min-height: 0;
+      align-items: center;
+      gap: 5px;
     }
 
-    /* ── Modal ─────────────────────────────────────────────────────── */
+    .stat-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+    /* ── Modal ─────────────────────────────────────────────────── */
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(0, 0, 0, 0.55);
       backdrop-filter: blur(4px);
       display: flex;
       align-items: center;
       justify-content: center;
-      /* Allow overlay to scroll on very short screens */
       overflow-y: auto;
       padding: 16px;
       z-index: 500;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.2s;
     }
 
-    .modal-overlay.open {
-      opacity: 1;
-      pointer-events: all;
-    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
 
     .modal {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 32px;
+      border-radius: 16px;
+      padding: 28px;
       width: 100%;
       max-width: 460px;
-      /* Constrain height so the modal never exceeds the viewport */
       max-height: calc(100vh - 32px);
       overflow-y: auto;
       transform: scale(0.95);
-      transition: transform 0.2s;
-      /* Ensure it sits on top of the overlay scroll area */
       margin: auto;
     }
 
-    .modal-overlay.open .modal {
-      transform: scale(1);
-    }
+    .modal-overlay.open .modal { transform: scale(1); }
 
     .modal-title {
-      font-family: 'Syne', sans-serif;
+      font-family: var(--font-heading);
       font-weight: 700;
-      font-size: 1.1rem;
-      margin-bottom: 22px;
+      font-size: 1.05rem;
+      margin-bottom: 20px;
+      color: var(--text);
     }
 
-    .form-group {
-      margin-bottom: 16px;
-    }
+    .form-group { margin-bottom: 14px; }
 
     .form-label {
       display: block;
-      font-size: 0.78rem;
+      font-size: 0.74rem;
       color: var(--text2);
-      margin-bottom: 7px;
-      font-weight: 500;
+      margin-bottom: 6px;
+      font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
@@ -759,83 +841,50 @@
     .form-textarea,
     .form-select {
       width: 100%;
-      padding: 12px 14px;
+      padding: 11px 13px;
       background: var(--surface2);
       border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
+      border-radius: 8px;
       color: var(--text);
       font-size: 0.9rem;
-      font-family: 'Inter', sans-serif;
+      font-family: var(--font-body);
       outline: none;
-      transition: border-color 0.2s;
     }
 
     .form-input:focus,
     .form-textarea:focus,
-    .form-select:focus {
-      border-color: var(--accent);
-    }
+    .form-select:focus { border-color: var(--accent); }
 
-    .form-textarea {
-      resize: vertical;
-      min-height: 80px;
-    }
+    .form-textarea { resize: vertical; min-height: 80px; }
+    .form-select { appearance: none; cursor: pointer; }
 
-    .form-select {
-      appearance: none;
-      cursor: pointer;
-    }
-
-    .color-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
+    .color-row { display: flex; gap: 8px; flex-wrap: wrap; }
 
     .color-swatch {
-      width: 28px;
-      height: 28px;
+      width: 28px; height: 28px;
       border-radius: 7px;
       cursor: pointer;
       border: 2px solid transparent;
-      transition: transform 0.1s, border-color 0.1s;
     }
 
-    .color-swatch:hover {
-      transform: scale(1.15);
-    }
-
-    .color-swatch.active {
-      border-color: white;
-      transform: scale(1.15);
-    }
+    .color-swatch:hover { transform: scale(1.15); }
+    .color-swatch.active { border-color: var(--text); transform: scale(1.15); }
 
     .modal-actions {
       display: flex;
       gap: 10px;
       justify-content: flex-end;
-      margin-top: 22px;
+      margin-top: 20px;
     }
 
-    .btn-danger {
-      background: transparent;
-      color: var(--danger);
-      border: 1px solid var(--danger);
-    }
-
-    .btn-danger:hover {
-      background: var(--danger);
-      color: white;
-    }
-
-    /* ── Toast Notifications ───────────────────────────────────────── */
+    /* ── Toast ─────────────────────────────────────────────────── */
     #toast-container {
       position: fixed;
-      bottom: 24px;
-      right: 24px;
+      bottom: 20px;
+      right: 20px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 7px;
       z-index: 9999;
     }
 
@@ -845,212 +894,168 @@
       gap: 10px;
       background: var(--surface2);
       border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 12px 16px;
+      border-radius: 8px;
+      padding: 11px 15px;
       font-size: 0.82rem;
-      min-width: 260px;
-      max-width: 340px;
+      min-width: 240px;
+      max-width: 320px;
       animation: toast-in 0.3s ease;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 8px 24px var(--shadow);
     }
 
-    .toast.exiting {
-      animation: toast-out 0.3s ease forwards;
-    }
+    .toast.exiting { animation: toast-out 0.3s ease forwards; }
+    .toast-icon { font-size: 1rem; }
+    .toast-msg { flex: 1; color: var(--text); }
 
-    .toast-icon {
-      font-size: 1rem;
-    }
-
-    .toast-msg {
-      flex: 1;
-      color: var(--text);
-    }
-
-    /* ── Stats Bar ─────────────────────────────────────────────────── */
-    .stats-bar {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      padding: 10px 28px;
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      font-family: 'DM Mono', monospace;
-      font-size: 0.72rem;
-      color: var(--text3);
-      flex-shrink: 0;
-    }
-
-    .stat-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .stat-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-    }
-
-    /* ── Drag Ghost ────────────────────────────────────────────────── */
+    /* ── Drop placeholder ──────────────────────────────────────── */
     .drop-placeholder {
       background: var(--surface3);
       border: 2px dashed var(--border2);
-      border-radius: var(--radius);
-      height: 60px;
+      border-radius: 10px;
+      height: 56px;
       opacity: 0.6;
     }
 
-    /* ── Scrollbar ─────────────────────────────────────────────────── */
-    ::-webkit-scrollbar {
-      width: 5px;
-      height: 5px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: var(--border2);
-      border-radius: 10px;
-    }
-
-    /* ── Animations ───────────────────────────────────────────────── */
-    @keyframes pulse-dot {
-
-      0%,
-      100% {
-        opacity: 1;
-        transform: scale(1);
-      }
-
-      50% {
-        opacity: 0.5;
-        transform: scale(0.85);
-      }
-    }
-
-    @keyframes card-in {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes slide-in-right {
-      from {
-        opacity: 0;
-        transform: translateX(12px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
-    @keyframes toast-in {
-      from {
-        opacity: 0;
-        transform: translateX(20px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
-    @keyframes toast-out {
-      from {
-        opacity: 1;
-        transform: translateX(0);
-      }
-
-      to {
-        opacity: 0;
-        transform: translateX(20px);
-      }
-    }
-
-    @keyframes flash-update {
-      0% {
-        box-shadow: 0 0 0 0 rgba(91, 127, 255, 0);
-      }
-
-      30% {
-        box-shadow: 0 0 0 6px rgba(91, 127, 255, 0.35);
-      }
-
-      100% {
-        box-shadow: 0 0 0 0 rgba(91, 127, 255, 0);
-      }
-    }
-
-    /* ── Empty State ───────────────────────────────────────────────── */
+    /* ── Empty state ───────────────────────────────────────────── */
     .empty-state {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 28px 16px;
+      padding: 24px 12px;
       color: var(--text3);
-      font-size: 0.82rem;
+      font-size: 0.80rem;
       text-align: center;
-      gap: 8px;
+      gap: 7px;
     }
 
-    .empty-state span:first-child {
-      font-size: 1.5rem;
+    .empty-state span:first-child { font-size: 1.4rem; }
+
+    /* ── Scrollbar ─────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
+
+    /* ══════════════════════════════════════════════════════
+       ANIMATIONS
+    ══════════════════════════════════════════════════════ */
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(0.85); }
     }
 
-    /* ── Responsive ────────────────────────────────────────────────── */
+    @keyframes card-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slide-in-right {
+      from { opacity: 0; transform: translateX(10px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateX(16px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes toast-out {
+      from { opacity: 1; transform: translateX(0); }
+      to   { opacity: 0; transform: translateX(16px); }
+    }
+
+    @keyframes flash-update {
+      0%   { box-shadow: 0 0 0 0 rgba(91, 127, 255, 0); }
+      30%  { box-shadow: 0 0 0 5px rgba(91, 127, 255, 0.35); }
+      100% { box-shadow: 0 0 0 0 rgba(91, 127, 255, 0); }
+    }
+
+    @keyframes drawer-in {
+      from { transform: translateX(100%); }
+      to   { transform: translateX(0); }
+    }
+
+    /* ══════════════════════════════════════════════════════
+       RESPONSIVE — Tablet (≤900px) and Mobile (≤600px)
+    ══════════════════════════════════════════════════════ */
     @media (max-width: 900px) {
+
+      /* Hide desktop side panel; it becomes a drawer */
       .activity-panel {
+        position: fixed;
+        top: 0; right: 0; bottom: 0;
+        z-index: 300;
+        width: 300px;
+        min-width: 0;
+        transform: translateX(100%);
+        box-shadow: -8px 0 32px var(--shadow);
+        /* Override the global * transition so the drawer uses its own */
+        transition: transform 0.3s ease !important;
+      }
+
+      .activity-panel.open {
+        transform: translateX(0);
+        animation: drawer-in 0.3s ease;
+      }
+
+      /* Dim overlay when drawer is open */
+      .activity-overlay {
         display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        z-index: 299;
       }
 
+      .activity-overlay.open { display: block; }
+
+      /* Show the mobile activity toggle button */
+      .activity-toggle { display: flex; }
+
+      /* Show close button inside drawer header */
+      .activity-header .close-activity { display: flex; }
+
+      /* Board goes to 1 col but 3 side-by-side columns are still nice on tablet */
+      /* Actually use scroll so all 3 are visible without stacking */
       .board {
-        grid-template-columns: 1fr;
-        /* On mobile, columns stack so the grid needs auto rows to size by content */
-        grid-template-rows: auto;
-        align-items: start;
-      }
-
-      /* On mobile, columns shrink to their content height since they're stacked */
-      .column {
-        min-height: 200px;
+        grid-template-columns: repeat(3, minmax(200px, 1fr));
+        overflow-x: auto;
+        overflow-y: auto;
+        padding: 16px;
+        gap: 14px;
       }
     }
 
     @media (max-width: 600px) {
+      .topbar { padding: 0 14px; height: 52px; }
+      .topbar-center { display: none; }  /* hide status on very small screens */
+      .user-chip span { display: none; } /* show only avatar on mobile */
+      .user-chip { padding: 4px 8px 4px 4px; }
+
+      .toolbar { padding: 10px 14px; flex-wrap: wrap; gap: 8px; }
+      .board-title { font-size: 0.9rem; }
+
       .board {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+        overflow-x: hidden;
+        overflow-y: auto;
         padding: 12px;
         gap: 12px;
       }
 
-      .topbar {
-        padding: 0 16px;
-      }
+      /* On phone, columns show full content and don't fill height */
+      .column { min-height: unset; }
+      .col-body { min-height: 80px; }
 
-      .toolbar {
-        padding: 10px 16px;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
+      .stats-bar { padding: 8px 14px; gap: 12px; font-size: 0.65rem; }
 
-      .stats-bar {
-        padding: 8px 16px;
-        flex-wrap: wrap;
-        gap: 10px;
-      }
+      #toast-container { bottom: 12px; right: 12px; left: 12px; }
+      .toast { min-width: 0; width: 100%; max-width: 100%; }
+
+      .activity-panel { width: 100%; }
+
+      .modal { padding: 20px; }
     }
   </style>
 </head>
@@ -1067,8 +1072,8 @@
         Real-Time Collaborative Board<br />
         <small style="color: var(--text3);">PDC Project — WebSockets + Redis Pub/Sub</small>
       </p>
-      <input type="text" id="username-input" class="login-input" placeholder="Enter your username..." maxlength="20"
-        autocomplete="off" />
+      <input type="text" id="username-input" class="login-input" placeholder="Enter your username..."
+        maxlength="20" autocomplete="off" />
       <button class="login-btn" onclick="joinBoard()">Join Board →</button>
       <div class="login-pdc-badge">
         <span class="dot"></span>
@@ -1093,34 +1098,40 @@
       </div>
       <div class="topbar-right">
         <div class="online-avatars" id="online-avatars"></div>
+        <!-- Mobile activity drawer toggle -->
+        <button class="activity-toggle" id="activity-toggle-btn" onclick="toggleActivityDrawer()" title="Live Activity">
+          📡
+          <span class="badge" id="activity-badge" style="display:none">!</span>
+        </button>
+        <!-- Dark/Light mode toggle -->
+        <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">☀️</button>
         <div class="user-chip" id="user-chip"></div>
       </div>
     </div>
 
     <div class="main-area">
+      <!-- Overlay for mobile drawer -->
+      <div class="activity-overlay" id="activity-overlay" onclick="closeActivityDrawer()"></div>
+
       <div class="board-area">
         <!-- Toolbar -->
         <div class="toolbar">
           <div class="board-title">📋 Team Board</div>
           <div class="toolbar-actions">
-            <button class="btn btn-ghost" onclick="openNewTaskModal('todo')">
-              ＋ New Task
-            </button>
-            <button class="btn btn-ghost" onclick="refreshBoard()">
-              ↺ Sync
-            </button>
+            <button class="btn btn-ghost" onclick="openNewTaskModal('todo')">＋ New Task</button>
+            <button class="btn btn-ghost" onclick="refreshBoard()">↺ Sync</button>
           </div>
         </div>
 
         <!-- Kanban Board -->
         <div class="board" id="board">
           <!-- To Do Column -->
-          <div class="column" id="col-todo" ondragover="onDragOver(event, 'todo')" ondragleave="onDragLeave(event)"
-            ondrop="onDrop(event, 'todo')">
+          <div class="column" id="col-todo" ondragover="onDragOver(event,'todo')"
+            ondragleave="onDragLeave(event)" ondrop="onDrop(event,'todo')">
             <div class="col-header">
               <div class="col-title-group">
-                <span class="col-dot" style="background: var(--todo)"></span>
-                <span class="col-title" style="color: var(--todo)">To Do</span>
+                <span class="col-dot" style="background:var(--todo)"></span>
+                <span class="col-title" style="color:var(--todo)">To Do</span>
                 <span class="col-count" id="count-todo">0</span>
               </div>
               <button class="col-add-btn" onclick="openNewTaskModal('todo')" title="Add task">+</button>
@@ -1129,12 +1140,12 @@
           </div>
 
           <!-- In Progress Column -->
-          <div class="column" id="col-doing" ondragover="onDragOver(event, 'doing')" ondragleave="onDragLeave(event)"
-            ondrop="onDrop(event, 'doing')">
+          <div class="column" id="col-doing" ondragover="onDragOver(event,'doing')"
+            ondragleave="onDragLeave(event)" ondrop="onDrop(event,'doing')">
             <div class="col-header">
               <div class="col-title-group">
-                <span class="col-dot" style="background: var(--doing)"></span>
-                <span class="col-title" style="color: var(--doing)">In Progress</span>
+                <span class="col-dot" style="background:var(--doing)"></span>
+                <span class="col-title" style="color:var(--doing)">In Progress</span>
                 <span class="col-count" id="count-doing">0</span>
               </div>
               <button class="col-add-btn" onclick="openNewTaskModal('doing')" title="Add task">+</button>
@@ -1143,12 +1154,12 @@
           </div>
 
           <!-- Done Column -->
-          <div class="column" id="col-done" ondragover="onDragOver(event, 'done')" ondragleave="onDragLeave(event)"
-            ondrop="onDrop(event, 'done')">
+          <div class="column" id="col-done" ondragover="onDragOver(event,'done')"
+            ondragleave="onDragLeave(event)" ondrop="onDrop(event,'done')">
             <div class="col-header">
               <div class="col-title-group">
-                <span class="col-dot" style="background: var(--done)"></span>
-                <span class="col-title" style="color: var(--done)">Done</span>
+                <span class="col-dot" style="background:var(--done)"></span>
+                <span class="col-title" style="color:var(--done)">Done</span>
                 <span class="col-count" id="count-done">0</span>
               </div>
               <button class="col-add-btn" onclick="openNewTaskModal('done')" title="Add task">+</button>
@@ -1160,27 +1171,26 @@
         <!-- Stats Bar -->
         <div class="stats-bar" id="stats-bar">
           <div class="stat-item">
-            <span class="stat-dot" style="background: var(--accent)"></span>
+            <span class="stat-dot" style="background:var(--accent)"></span>
             <span id="stat-total">0 tasks</span>
           </div>
           <div class="stat-item">
-            <span class="stat-dot" style="background: var(--done)"></span>
+            <span class="stat-dot" style="background:var(--done)"></span>
             <span id="stat-clients">0 online</span>
           </div>
-          <div class="stat-item">
-            <span id="stat-redis">⬡ Redis: —</span>
-          </div>
-          <div class="stat-item" style="margin-left: auto">
-            <span id="stat-time" style="color: var(--text3)"></span>
+          <div class="stat-item"><span id="stat-redis">⬡ Redis: —</span></div>
+          <div class="stat-item" style="margin-left:auto">
+            <span id="stat-time" style="color:var(--text3)"></span>
           </div>
         </div>
       </div>
 
-      <!-- Activity Panel -->
-      <div class="activity-panel">
+      <!-- Activity Panel (desktop sidebar / mobile drawer) -->
+      <div class="activity-panel" id="activity-panel">
         <div class="activity-header">
           <span class="live-indicator"></span>
           Live Activity
+          <button class="close-activity" onclick="closeActivityDrawer()" title="Close">✕</button>
         </div>
         <div class="activity-list" id="activity-list">
           <div class="empty-state">
@@ -1225,107 +1235,154 @@
     </div>
   </div>
 
-  <!-- Toast Container -->
-  <div id="toast-container"></div>
-
-
-  <!-- Confirmation Modal -->
+  <!-- Confirm Modal -->
   <div class="modal-overlay" id="confirm-modal">
-    <div class="modal" style="max-width: 400px;">
+    <div class="modal" style="max-width:400px">
       <div class="modal-title" id="confirm-title">Confirm</div>
-
-      <div id="confirm-message" style="color: var(--text2); line-height: 1.6; margin-bottom: 24px;">
-        Are you sure?
-      </div>
-
+      <div id="confirm-message" style="color:var(--text2);line-height:1.6;margin-bottom:22px">Are you sure?</div>
       <div class="modal-actions">
-        <button class="btn btn-ghost" id="confirm-cancel-btn">
-          Cancel
-        </button>
-
-        <button class="btn btn-danger" id="confirm-ok-btn">
-          Confirm
-        </button>
+        <button class="btn btn-ghost" id="confirm-cancel-btn">Cancel</button>
+        <button class="btn btn-danger" id="confirm-ok-btn">Confirm</button>
       </div>
     </div>
   </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
 
   <!-- ══════════════════════════════════════════════════════
      JAVASCRIPT
 ══════════════════════════════════════════════════════ -->
   <script>
-    /* ─────────────────────────────────────────────────────
-       Configuration
-    ───────────────────────────────────────────────────── */
-    const API = window.location.origin;
-    const WS_BASE = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host;
+    /* ── Config ─────────────────────────────────────────────────── */
+    const API    = window.location.origin;
+    const WS_BASE = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host;
 
-    const COLORS = ['#5b7fff', '#f5a623', '#2dd87a', '#ff4d6a', '#c47aff', '#00d4ff', '#ff6b35', '#ffd93d'];
-    const COLUMNS = ['todo', 'doing', 'done'];
+    const COLORS  = ['#5b7fff','#f5a623','#2dd87a','#ff4d6a','#c47aff','#00d4ff','#ff6b35','#ffd93d'];
+    const COLUMNS = ['todo','doing','done'];
 
-    /* ─────────────────────────────────────────────────────
-       State
-    ───────────────────────────────────────────────────── */
-    let currentUser = '';
-    let ws = null;
-    let tasks = {};           // id -> task object
-    let dragTaskId = null;
-    let editingTaskId = null;
-    let selectedColor = COLORS[0];
-    let reconnectTimer = null;
+    /* ── State ──────────────────────────────────────────────────── */
+    let currentUser     = '';
+    let ws              = null;
+    let tasks           = {};
+    let dragTaskId      = null;
+    let editingTaskId   = null;
+    let selectedColor   = COLORS[0];
+    let reconnectTimer  = null;
     let reconnectAttempts = 0;
-    let statsInterval = null;
+    let statsInterval   = null;
     let initialTaskData = null;
-    let modalDirty = false;
+    let modalDirty      = false;
+    let newActivityCount = 0;  // badge counter for mobile
 
-    /* ─────────────────────────────────────────────────────
-       Login
-    ───────────────────────────────────────────────────── */
+    /* ──────────────────────────────────────────────────────────────
+       THEME SYSTEM
+       Reads from localStorage so preference survives refreshes.
+    ────────────────────────────────────────────────────────────── */
+    (function initTheme() {
+      const saved = localStorage.getItem('taskflow-theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', saved);
+      updateThemeButton(saved);
+    })();
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next    = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('taskflow-theme', next);
+      updateThemeButton(next);
+    }
+
+    function updateThemeButton(theme) {
+      const btn = document.getElementById('theme-toggle-btn');
+      if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+      btn.title = theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       ACTIVITY DRAWER (Mobile)
+    ────────────────────────────────────────────────────────────── */
+    function toggleActivityDrawer() {
+      const panel = document.getElementById('activity-panel');
+      if (panel.classList.contains('open')) {
+        closeActivityDrawer();
+      } else {
+        openActivityDrawer();
+      }
+    }
+
+    function openActivityDrawer() {
+      document.getElementById('activity-panel').classList.add('open');
+      document.getElementById('activity-overlay').classList.add('open');
+      // Reset badge
+      newActivityCount = 0;
+      const badge = document.getElementById('activity-badge');
+      if (badge) badge.style.display = 'none';
+    }
+
+    function closeActivityDrawer() {
+      document.getElementById('activity-panel').classList.remove('open');
+      document.getElementById('activity-overlay').classList.remove('open');
+    }
+
+    function bumpActivityBadge() {
+      // Only show badge when drawer is closed and we're in mobile mode
+      const toggle = document.getElementById('activity-toggle-btn');
+      const isHidden = window.getComputedStyle(toggle).display === 'none';
+      if (isHidden) return;
+      const panel = document.getElementById('activity-panel');
+      if (panel.classList.contains('open')) return;
+      newActivityCount++;
+      const badge = document.getElementById('activity-badge');
+      if (badge) {
+        badge.style.display = 'flex';
+        badge.textContent = newActivityCount > 9 ? '!' : newActivityCount;
+      }
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       LOGIN
+    ────────────────────────────────────────────────────────────── */
     document.getElementById('username-input').addEventListener('keydown', e => {
       if (e.key === 'Enter') joinBoard();
     });
 
     function joinBoard() {
       const input = document.getElementById('username-input');
-      const name = input.value.trim();
+      const name  = input.value.trim();
       if (!name) { input.focus(); shakeElement(input); return; }
       currentUser = name;
 
       document.getElementById('login-screen').classList.add('hidden');
-      const app = document.getElementById('app');
-      app.classList.add('visible');
+      document.getElementById('app').classList.add('visible');
 
-      // Set user chip
       document.getElementById('user-chip').innerHTML = `
-      <div class="avatar" style="background: ${stringToColor(name)}">${name[0].toUpperCase()}</div>
-      <span>${name}</span>
-    `;
+        <div class="avatar" style="background:${stringToColor(name)}">${name[0].toUpperCase()}</div>
+        <span>${escHtml(name)}</span>
+      `;
 
       initColorSwatches();
       fetchTasks();
       connectWebSocket();
       startStatsPoll();
 
-      // Update clock
       setInterval(() => {
         document.getElementById('stat-time').textContent = new Date().toLocaleTimeString();
       }, 1000);
     }
 
-    // -----------------
     function captureModalState() {
       return {
-        title: document.getElementById('task-title').value,
-        desc: document.getElementById('task-desc').value,
+        title:  document.getElementById('task-title').value,
+        desc:   document.getElementById('task-desc').value,
         column: document.getElementById('task-column').value,
-        color: selectedColor
+        color:  selectedColor,
       };
     }
 
-    /* ─────────────────────────────────────────────────────
-       WebSocket Connection (Real-Time Layer)
-       PDC: Persistent connection for event-driven updates
-    ───────────────────────────────────────────────────── */
+    /* ──────────────────────────────────────────────────────────────
+       WEBSOCKET
+    ────────────────────────────────────────────────────────────── */
     function connectWebSocket() {
       const url = `${WS_BASE}/ws/${encodeURIComponent(currentUser)}`;
       ws = new WebSocket(url);
@@ -1334,11 +1391,8 @@
         setStatus('connected', 'Live');
         reconnectAttempts = 0;
         if (reconnectTimer) clearTimeout(reconnectTimer);
-        // Keepalive ping every 25s
         ws._pingInterval = setInterval(() => {
-          if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: 'PING' }));
-          }
+          if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'PING' }));
         }, 25000);
       };
 
@@ -1365,46 +1419,35 @@
       };
     }
 
-    /* ─────────────────────────────────────────────────────
-       Event Handler — PDC: Event-Driven Architecture
-       All state changes arrive as events; UI reacts accordingly
-    ───────────────────────────────────────────────────── */
+    /* ──────────────────────────────────────────────────────────────
+       EVENT HANDLER
+       Handles both live events AND the HISTORY_INIT batch.
+    ────────────────────────────────────────────────────────────── */
     function handleServerEvent(event) {
-      console.log('[WS Event]', event.type, event);
-
       switch (event.type) {
 
-        case 'TASK_CREATED':
-          const existingCard = document.getElementById(`task-${event.task.id}`);
+        /* ── Persistent history sent on connect ──────────────── */
+        case 'HISTORY_INIT':
+          loadHistoryBatch(event.history || []);
+          break;
 
-          // Prevent duplicate rendering
-          if (!existingCard) {
+        case 'TASK_CREATED': {
+          const existing = document.getElementById(`task-${event.task.id}`);
+          if (!existing) {
             tasks[event.task.id] = event.task;
             renderTask(event.task, true);
           } else {
             tasks[event.task.id] = event.task;
             rerenderTask(event.task.id);
           }
-
           updateCounts();
-
           if (event.actor !== currentUser) {
-            addActivity(
-              '➕',
-              event.actor,
-              `created "${event.task.title}"`,
-              'var(--todo)'
-            );
-
-            showToast(
-              '➕',
-              `${event.actor} created a task`,
-              event.task.title
-            );
-
+            addActivity('➕', event.actor, `created "${event.task.title}"`, 'var(--todo)');
+            showToast('➕', `${event.actor} created a task`, event.task.title);
             flashCard(event.task.id);
           }
           break;
+        }
 
         case 'TASK_UPDATED':
           if (tasks[event.task_id]) {
@@ -1421,7 +1464,6 @@
 
         case 'TASK_MOVED':
           if (tasks[event.task_id]) {
-            const oldCol = tasks[event.task_id].column;
             tasks[event.task_id].column = event.column;
             if (event.task) tasks[event.task_id] = event.task;
             moveCardDOM(event.task_id, event.column);
@@ -1463,7 +1505,6 @@
           break;
 
         case 'PONG':
-          // Keepalive confirmed
           break;
 
         default:
@@ -1471,12 +1512,58 @@
       }
     }
 
-    /* ─────────────────────────────────────────────────────
-       Data Fetching
-    ───────────────────────────────────────────────────── */
+    /* ──────────────────────────────────────────────────────────────
+       HISTORY LOADER
+       Populates the activity panel with past events so new
+       users immediately see what happened before they joined.
+    ────────────────────────────────────────────────────────────── */
+    function loadHistoryBatch(history) {
+      if (!history || history.length === 0) return;
+
+      const list = document.getElementById('activity-list');
+      // Clear empty-state placeholder
+      const emptyState = list.querySelector('.empty-state');
+      if (emptyState) emptyState.remove();
+
+      // Insert historical items (oldest → bottom, newest → top)
+      // history array comes oldest-first from the server
+      history.forEach(entry => {
+        const item = document.createElement('div');
+        item.className = 'activity-item historical';
+
+        // Format timestamp from ISO string
+        let timeStr = '—';
+        try {
+          timeStr = new Date(entry.timestamp).toLocaleTimeString('en-US', {
+            hour: '2-digit', minute: '2-digit',
+          });
+        } catch (_) {}
+
+        const actor   = entry.actor || 'Unknown';
+        const descRaw = entry.description || '';
+        // Strip actor prefix from description for display (e.g. "Alice created ..." → "created ...")
+        const descDisplay = descRaw.startsWith(actor + ' ')
+          ? descRaw.slice(actor.length + 1)
+          : descRaw;
+
+        item.innerHTML = `
+          <div class="activity-icon" style="background:${entry.color}22;color:${entry.color}">${entry.icon}</div>
+          <div class="activity-content">
+            <div class="activity-text"><strong>${escHtml(actor)}</strong> ${escHtml(descDisplay)}</div>
+            <div class="activity-time">${timeStr} · history</div>
+          </div>
+        `;
+        // Append to end (bottom) — newest live events will prepend to top
+        list.appendChild(item);
+      });
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       DATA FETCHING
+    ────────────────────────────────────────────────────────────── */
     async function fetchTasks() {
       try {
-        const res = await fetch(`${API}/api/tasks`);
+        const res  = await fetch(`${API}/api/tasks`);
         const data = await res.json();
         tasks = {};
         data.tasks.forEach(t => tasks[t.id] = t);
@@ -1496,22 +1583,22 @@
     function startStatsPoll() {
       statsInterval = setInterval(async () => {
         try {
-          const res = await fetch(`${API}/api/stats`);
+          const res  = await fetch(`${API}/api/stats`);
           const data = await res.json();
-          document.getElementById('stat-total').textContent = `${data.total_tasks} tasks`;
+          document.getElementById('stat-total').textContent   = `${data.total_tasks} tasks`;
           document.getElementById('stat-clients').textContent = `${data.connected_clients} online`;
-          document.getElementById('stat-redis').textContent = data.redis_connected
+          document.getElementById('stat-redis').textContent   = data.redis_connected
             ? '⬡ Redis: Connected' : '⬡ Redis: Local mode';
           updateOnlineUsers(data.online_users || []);
-        } catch (e) { }
+        } catch (e) {}
       }, 5000);
     }
 
-    /* ─────────────────────────────────────────────────────
-       Rendering
-    ───────────────────────────────────────────────────── */
+    /* ──────────────────────────────────────────────────────────────
+       RENDERING
+    ────────────────────────────────────────────────────────────── */
     function renderAllTasks() {
-      ['todo', 'doing', 'done'].forEach(col => {
+      ['todo','doing','done'].forEach(col => {
         document.getElementById(`body-${col}`).innerHTML = '';
       });
       Object.values(tasks).forEach(t => renderTask(t, false));
@@ -1519,63 +1606,51 @@
     }
 
     function renderTask(task, animate = true) {
-      const col = task.column || 'todo';
+      const col  = task.column || 'todo';
       const body = document.getElementById(`body-${col}`);
-
       if (!body) return;
 
-      // Prevent duplicate cards
       const existing = document.getElementById(`task-${task.id}`);
+      if (existing) existing.remove();
 
-      if (existing) {
-        existing.remove();
-      }
-
-      // Remove empty state
       const emptyEl = body.querySelector('.empty-state');
       if (emptyEl) emptyEl.remove();
 
       const card = buildCardElement(task);
-
-      if (!animate) {
-        card.style.animation = 'none';
-      }
-
+      if (!animate) card.style.animation = 'none';
       body.appendChild(card);
-
       showEmptyStates();
     }
 
     function buildCardElement(task) {
-      const div = document.createElement('div');
-      div.className = 'task-card';
-      div.id = `task-${task.id}`;
+      const div   = document.createElement('div');
+      div.className   = 'task-card';
+      div.id          = `task-${task.id}`;
       div.dataset.taskId = task.id;
-      div.draggable = true;
+      div.draggable   = true;
       div.style.setProperty('--card-color', task.color || '#5b7fff');
 
       div.addEventListener('dragstart', e => onDragStart(e, task.id));
       div.addEventListener('dragend', onDragEnd);
 
       const initials = (task.created_by || 'A')[0].toUpperCase();
-      const date = new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const date     = new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
       div.innerHTML = `
-      <div class="task-header">
-        <div class="task-title">${escHtml(task.title)}</div>
-        <div class="task-actions">
-          <button class="task-action-btn" onclick="openEditModal('${task.id}')" title="Edit">✎</button>
-          <button class="task-action-btn danger" onclick="deleteTask('${task.id}')" title="Delete">✕</button>
+        <div class="task-header">
+          <div class="task-title">${escHtml(task.title)}</div>
+          <div class="task-actions">
+            <button class="task-action-btn" onclick="openEditModal('${task.id}')" title="Edit">✎</button>
+            <button class="task-action-btn danger" onclick="deleteTask('${task.id}')" title="Delete">✕</button>
+          </div>
         </div>
-      </div>
-      ${task.description ? `<div class="task-desc">${escHtml(task.description)}</div>` : ''}
-      <div class="task-footer">
-        <span class="task-meta">${date}</span>
-        <div class="task-avatar" style="background: ${stringToColor(task.created_by || 'A')}" title="${escHtml(task.created_by || 'A')}">
-          ${initials}
+        ${task.description ? `<div class="task-desc">${escHtml(task.description)}</div>` : ''}
+        <div class="task-footer">
+          <span class="task-meta">${date}</span>
+          <div class="task-avatar" style="background:${stringToColor(task.created_by||'A')}"
+               title="${escHtml(task.created_by||'A')}">${initials}</div>
         </div>
-      </div>
-    `;
+      `;
       return div;
     }
 
@@ -1589,13 +1664,11 @@
     }
 
     function moveCardDOM(taskId, newColumn) {
-      const card = document.getElementById(`task-${taskId}`);
+      const card    = document.getElementById(`task-${taskId}`);
       const newBody = document.getElementById(`body-${newColumn}`);
       if (!card || !newBody) return;
-
       const emptyEl = newBody.querySelector('.empty-state');
       if (emptyEl) emptyEl.remove();
-
       newBody.appendChild(card);
       card.style.animation = 'card-in 0.25s ease';
       showEmptyStates();
@@ -1605,27 +1678,24 @@
     function removeCardDOM(taskId) {
       const card = document.getElementById(`task-${taskId}`);
       if (card) {
-        card.style.opacity = '0';
+        card.style.opacity   = '0';
         card.style.transform = 'scale(0.9)';
         card.style.transition = 'all 0.2s';
-        setTimeout(() => {
-          card.remove();
-          showEmptyStates();
-        }, 200);
+        setTimeout(() => { card.remove(); showEmptyStates(); }, 200);
       }
     }
 
     function showEmptyStates() {
-      ['todo', 'doing', 'done'].forEach(col => {
-        const body = document.getElementById(`body-${col}`);
+      ['todo','doing','done'].forEach(col => {
+        const body     = document.getElementById(`body-${col}`);
         const hasTasks = body.querySelectorAll('.task-card').length > 0;
         const hasEmpty = body.querySelector('.empty-state');
+        const labels   = { todo: 'No tasks yet', doing: 'Nothing in progress', done: 'Nothing done yet' };
         if (!hasTasks && !hasEmpty) {
-          const labels = { todo: 'No tasks yet', doing: 'Nothing in progress', done: 'Nothing done yet' };
-          const emptyEl = document.createElement('div');
-          emptyEl.className = 'empty-state';
-          emptyEl.innerHTML = `<span>🌑</span><span>${labels[col]}</span>`;
-          body.appendChild(emptyEl);
+          const el = document.createElement('div');
+          el.className = 'empty-state';
+          el.innerHTML = `<span>🌑</span><span>${labels[col]}</span>`;
+          body.appendChild(el);
         } else if (hasTasks && hasEmpty) {
           hasEmpty.remove();
         }
@@ -1634,9 +1704,7 @@
 
     function updateCounts() {
       const counts = { todo: 0, doing: 0, done: 0 };
-      Object.values(tasks).forEach(t => {
-        counts[t.column] = (counts[t.column] || 0) + 1;
-      });
+      Object.values(tasks).forEach(t => { counts[t.column] = (counts[t.column] || 0) + 1; });
       COLUMNS.forEach(col => {
         const el = document.getElementById(`count-${col}`);
         if (el) el.textContent = counts[col] || 0;
@@ -1644,9 +1712,9 @@
       document.getElementById('stat-total').textContent = `${Object.keys(tasks).length} tasks`;
     }
 
-    /* ─────────────────────────────────────────────────────
-       Drag & Drop
-    ───────────────────────────────────────────────────── */
+    /* ──────────────────────────────────────────────────────────────
+       DRAG & DROP
+    ────────────────────────────────────────────────────────────── */
     function onDragStart(e, taskId) {
       dragTaskId = taskId;
       e.currentTarget.classList.add('dragging');
@@ -1656,7 +1724,7 @@
 
     function onDragEnd(e) {
       e.currentTarget.classList.remove('dragging');
-      document.querySelectorAll('.column').forEach(col => col.classList.remove('drag-over'));
+      document.querySelectorAll('.column').forEach(c => c.classList.remove('drag-over'));
     }
 
     function onDragOver(e, column) {
@@ -1667,10 +1735,6 @@
     }
 
     function onDragLeave(e) {
-      // Only remove drag-over when the cursor truly leaves the column element,
-      // not when it moves between child elements (cards, col-body, etc.).
-      // relatedTarget is where the cursor is going; if it's still inside the
-      // column, we keep the highlight.
       if (e.currentTarget.contains(e.relatedTarget)) return;
       e.currentTarget.classList.remove('drag-over');
     }
@@ -1688,117 +1752,86 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ column }),
         });
-        // Optimistic local update (server will also broadcast)
         tasks[taskId].column = column;
         moveCardDOM(taskId, column);
         updateCounts();
         addActivity('🔀', 'You', `moved "${tasks[taskId]?.title}"`, 'var(--doing)');
-      } catch (e) {
+      } catch (err) {
         showToast('⚠️', 'Move failed', 'Please try again');
       }
       dragTaskId = null;
     }
 
-    /* ─────────────────────────────────────────────────────
-       Task CRUD
-    ───────────────────────────────────────────────────── */
+    /* ──────────────────────────────────────────────────────────────
+       TASK CRUD
+    ────────────────────────────────────────────────────────────── */
     function openNewTaskModal(col = 'todo') {
       editingTaskId = null;
-      document.getElementById('modal-title').textContent = 'New Task';
-      document.getElementById('modal-save-btn').textContent = 'Create Task';
-      document.getElementById('task-title').value = '';
-      document.getElementById('task-desc').value = '';
-      document.getElementById('task-column').value = col;
+      document.getElementById('modal-title').textContent     = 'New Task';
+      document.getElementById('modal-save-btn').textContent  = 'Create Task';
+      document.getElementById('task-title').value            = '';
+      document.getElementById('task-desc').value             = '';
+      document.getElementById('task-column').value           = col;
       selectedColor = COLORS[0];
       updateColorSwatches();
       document.getElementById('task-modal').classList.add('open');
       setTimeout(() => document.getElementById('task-title').focus(), 100);
-
       initialTaskData = captureModalState();
       modalDirty = false;
     }
 
     function checkModalDirty() {
-      const current = JSON.stringify(captureModalState());
-      const initial = JSON.stringify(initialTaskData);
-      modalDirty = current !== initial;
+      modalDirty = JSON.stringify(captureModalState()) !== JSON.stringify(initialTaskData);
     }
 
     function openEditModal(taskId) {
       const task = tasks[taskId];
       if (!task) return;
       editingTaskId = taskId;
-      document.getElementById('modal-title').textContent = 'Edit Task';
+      document.getElementById('modal-title').textContent    = 'Edit Task';
       document.getElementById('modal-save-btn').textContent = 'Save Changes';
-      document.getElementById('task-title').value = task.title;
-      document.getElementById('task-desc').value = task.description || '';
-      document.getElementById('task-column').value = task.column;
+      document.getElementById('task-title').value           = task.title;
+      document.getElementById('task-desc').value            = task.description || '';
+      document.getElementById('task-column').value          = task.column;
       selectedColor = task.color || COLORS[0];
       updateColorSwatches();
       document.getElementById('task-modal').classList.add('open');
       setTimeout(() => document.getElementById('task-title').focus(), 100);
-
       initialTaskData = captureModalState();
       modalDirty = false;
     }
 
     function closeModal() {
-
       if (modalDirty) {
-
         openConfirmModal({
-
           title: 'Unsaved Changes',
-
-          message:
-            'You have unsaved changes. Save before closing?',
-
+          message: 'You have unsaved changes. Save before closing?',
           confirmText: 'Save',
-
           cancelText: 'Discard',
-
-          onConfirm: async () => {
-
-            await saveTask();
-
-          },
-
-          onCancel: () => {
-
+          onConfirm: async () => { await saveTask(); },
+          onCancel:  () => {
             modalDirty = false;
-
-            document
-              .getElementById('task-modal')
-              .classList.remove('open');
-          }
+            document.getElementById('task-modal').classList.remove('open');
+          },
         });
-
         return;
       }
-
-      document
-        .getElementById('task-modal')
-        .classList.remove('open');
+      document.getElementById('task-modal').classList.remove('open');
     }
 
     async function saveTask() {
-      const title = document.getElementById('task-title').value.trim();
-      if (!title) {
-        shakeElement(document.getElementById('task-title'));
-        return;
-      }
-      const desc = document.getElementById('task-desc').value.trim();
+      const title  = document.getElementById('task-title').value.trim();
+      if (!title) { shakeElement(document.getElementById('task-title')); return; }
+      const desc   = document.getElementById('task-desc').value.trim();
       const column = document.getElementById('task-column').value;
 
       if (editingTaskId) {
-        // Update
         try {
           await fetch(`${API}/api/tasks/${editingTaskId}?username=${encodeURIComponent(currentUser)}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ title, description: desc, color: selectedColor }),
           });
-          // Optimistic update
           Object.assign(tasks[editingTaskId], { title, description: desc, color: selectedColor });
           rerenderTask(editingTaskId);
           if (tasks[editingTaskId].column !== column) {
@@ -1811,112 +1844,66 @@
           addActivity('✏️', 'You', `edited "${title}"`, 'var(--accent)');
         } catch (e) { showToast('⚠️', 'Update failed'); }
       } else {
-        // Create
         try {
           await fetch(`${API}/api/tasks?username=${encodeURIComponent(currentUser)}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              title,
-              description: desc,
-              column,
-              color: selectedColor
-            }),
+            body: JSON.stringify({ title, description: desc, column, color: selectedColor }),
           });
-
-          addActivity(
-            '➕',
-            'You',
-            `created "${title}"`,
-            'var(--todo)'
-          );
-
-        } catch (e) {
-          showToast('⚠️', 'Create failed');
-        }
+          addActivity('➕', 'You', `created "${title}"`, 'var(--todo)');
+        } catch (e) { showToast('⚠️', 'Create failed'); }
       }
+
       modalDirty = false;
       initialTaskData = null;
-
-      document
-        .getElementById('task-modal')
-        .classList.remove('open');
-
-      document
-        .getElementById('confirm-modal')
-        .classList.remove('open');
+      document.getElementById('task-modal').classList.remove('open');
+      document.getElementById('confirm-modal').classList.remove('open');
     }
 
     async function deleteTask(taskId) {
-
       const task = tasks[taskId];
-
       if (!task) return;
-
       openConfirmModal({
         title: 'Delete Task',
         message: `Delete "${task.title}"? This cannot be undone.`,
         confirmText: 'Delete',
         danger: true,
-
         async onConfirm() {
-
           try {
-
-            await fetch(
-              `${API}/api/tasks/${taskId}?username=${encodeURIComponent(currentUser)}`,
-              {
-                method: 'DELETE',
-              }
-            );
-
+            await fetch(`${API}/api/tasks/${taskId}?username=${encodeURIComponent(currentUser)}`, {
+              method: 'DELETE',
+            });
             const title = tasks[taskId]?.title || 'Task';
-
             delete tasks[taskId];
-
             removeCardDOM(taskId);
-
             updateCounts();
-
-            addActivity(
-              '🗑️',
-              'You',
-              `deleted "${title}"`,
-              'var(--danger)'
-            );
-
-          } catch (e) {
-
-            showToast('⚠️', 'Delete failed');
-
-          }
-        }
+            addActivity('🗑️', 'You', `deleted "${title}"`, 'var(--danger)');
+          } catch (e) { showToast('⚠️', 'Delete failed'); }
+        },
       });
     }
 
-    /* ─────────────────────────────────────────────────────
-       UI Helpers
-    ───────────────────────────────────────────────────── */
+    /* ──────────────────────────────────────────────────────────────
+       UI HELPERS
+    ────────────────────────────────────────────────────────────── */
     function setStatus(state, text) {
-      const dot = document.getElementById('ws-status-dot');
-      const label = document.getElementById('ws-status-text');
-      dot.className = `status-dot ${state}`;
-      label.textContent = text;
+      document.getElementById('ws-status-dot').className = `status-dot ${state}`;
+      document.getElementById('ws-status-text').textContent = text;
     }
 
     function updateOnlineUsers(users) {
       const container = document.getElementById('online-avatars');
-      const unique = [...new Set(users)].slice(0, 6);
+      const unique    = [...new Set(users)].slice(0, 6);
       container.innerHTML = unique.map(u => `
-      <div class="avatar" style="background: ${stringToColor(u)}" title="${escHtml(u)}">
-        ${u[0].toUpperCase()}
-      </div>
-    `).join('');
+        <div class="avatar" style="background:${stringToColor(u)}" title="${escHtml(u)}">
+          ${u[0].toUpperCase()}
+        </div>
+      `).join('');
       document.getElementById('stat-clients').textContent = `${unique.length} online`;
     }
 
     function addActivity(icon, actor, text, color) {
-      const list = document.getElementById('activity-list');
+      const list       = document.getElementById('activity-list');
       const emptyState = list.querySelector('.empty-state');
       if (emptyState) emptyState.remove();
 
@@ -1924,25 +1911,28 @@
       item.className = 'activity-item';
       const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
       item.innerHTML = `
-      <div class="activity-icon" style="background: ${color}22; color: ${color}">${icon}</div>
-      <div class="activity-content">
-        <div class="activity-text"><strong>${escHtml(actor)}</strong> ${escHtml(text)}</div>
-        <div class="activity-time">${time}</div>
-      </div>
-    `;
+        <div class="activity-icon" style="background:${color}22;color:${color}">${icon}</div>
+        <div class="activity-content">
+          <div class="activity-text"><strong>${escHtml(actor)}</strong> ${escHtml(text)}</div>
+          <div class="activity-time">${time}</div>
+        </div>
+      `;
       list.insertBefore(item, list.firstChild);
-      // Keep last 50 events
-      while (list.children.length > 50) list.removeChild(list.lastChild);
+      // Keep list bounded
+      while (list.children.length > 60) list.removeChild(list.lastChild);
+
+      // Bump mobile badge if drawer is closed
+      bumpActivityBadge();
     }
 
     function showToast(icon, msg, sub = '') {
       const container = document.getElementById('toast-container');
-      const toast = document.createElement('div');
+      const toast     = document.createElement('div');
       toast.className = 'toast';
       toast.innerHTML = `
-      <span class="toast-icon">${icon}</span>
-      <span class="toast-msg">${escHtml(msg)}${sub ? ` <span style="color: var(--text2); font-size: 0.75em">— ${escHtml(sub)}</span>` : ''}</span>
-    `;
+        <span class="toast-icon">${icon}</span>
+        <span class="toast-msg">${escHtml(msg)}${sub ? ` <span style="color:var(--text2);font-size:.75em">— ${escHtml(sub)}</span>` : ''}</span>
+      `;
       container.appendChild(toast);
       setTimeout(() => {
         toast.classList.add('exiting');
@@ -1954,35 +1944,25 @@
       const card = document.getElementById(`task-${taskId}`);
       if (!card) return;
       card.classList.remove('updated-flash');
-      void card.offsetWidth; // reflow
+      void card.offsetWidth;
       card.classList.add('updated-flash');
     }
 
     function shakeElement(el) {
-      el.style.animation = 'none';
+      el.style.animation   = 'none';
       el.style.borderColor = 'var(--danger)';
-      setTimeout(() => {
-        el.style.animation = '';
-        el.style.borderColor = '';
-      }, 600);
+      setTimeout(() => { el.style.animation = ''; el.style.borderColor = ''; }, 600);
     }
 
     function initColorSwatches() {
       const container = document.getElementById('color-swatches');
       container.innerHTML = COLORS.map(c => `
-      <div class="color-swatch ${c === selectedColor ? 'active' : ''}"
-           style="background: ${c}"
-           onclick="selectColor('${c}')"></div>
-    `).join('');
+        <div class="color-swatch ${c === selectedColor ? 'active' : ''}"
+             style="background:${c}" onclick="selectColor('${c}')"></div>
+      `).join('');
     }
 
-    function updateColorSwatches() {
-      document.querySelectorAll('.color-swatch').forEach(el => {
-        el.classList.toggle('active', el.style.background === selectedColor ||
-          el.style.backgroundColor === selectedColor);
-      });
-      initColorSwatches();
-    }
+    function updateColorSwatches() { initColorSwatches(); }
 
     function selectColor(color) {
       selectedColor = color;
@@ -1993,78 +1973,52 @@
     function stringToColor(str) {
       let hash = 0;
       for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-      const hue = Math.abs(hash) % 360;
-      return `hsl(${hue}, 55%, 45%)`;
+      return `hsl(${Math.abs(hash) % 360}, 55%, 45%)`;
     }
 
     function escHtml(str) {
       if (!str) return '';
-      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      return String(str)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;');
     }
 
-    // Close modal on overlay click
-    document.getElementById('task-modal').addEventListener('click', function (e) {
+    /* ──────────────────────────────────────────────────────────────
+       MODAL WIRING
+    ────────────────────────────────────────────────────────────── */
+    document.getElementById('task-modal').addEventListener('click', function(e) {
       if (e.target === this) closeModal();
     });
 
-    // Enter key in title
     document.getElementById('task-title')?.addEventListener('keydown', e => {
       if (e.key === 'Enter') saveTask();
     });
 
-    // Detect unsaved changes
-    ['task-title', 'task-desc', 'task-column'].forEach(id => {
+    ['task-title','task-desc','task-column'].forEach(id => {
       document.getElementById(id).addEventListener('input', checkModalDirty);
       document.getElementById(id).addEventListener('change', checkModalDirty);
     });
 
-    // Color swatches init
-    initColorSwatches();
-    // ------------------------------------------
-    function openConfirmModal({
-      title = 'Confirm',
-      message = 'Are you sure?',
-      confirmText = 'Confirm',
-      cancelText = 'Cancel',
-      danger = false,
-      onConfirm = () => { },
-      onCancel = () => { }
-    }) {
-
-      const modal = document.getElementById('confirm-modal');
-
-      document.getElementById('confirm-title').textContent = title;
+    function openConfirmModal({ title='Confirm', message='Are you sure?', confirmText='Confirm',
+      cancelText='Cancel', danger=false, onConfirm=()=>{}, onCancel=()=>{} }) {
+      const modal     = document.getElementById('confirm-modal');
+      document.getElementById('confirm-title').textContent   = title;
       document.getElementById('confirm-message').textContent = message;
-
-      const okBtn = document.getElementById('confirm-ok-btn');
+      const okBtn     = document.getElementById('confirm-ok-btn');
       const cancelBtn = document.getElementById('confirm-cancel-btn');
-
-      okBtn.textContent = confirmText;
+      okBtn.textContent     = confirmText;
       cancelBtn.textContent = cancelText;
-
-      okBtn.className = danger
-        ? 'btn btn-danger'
-        : 'btn btn-primary';
-
+      okBtn.className = danger ? 'btn btn-danger' : 'btn btn-primary';
       modal.classList.add('open');
-
-      okBtn.onclick = () => {
-        modal.classList.remove('open');
-        onConfirm();
-      };
-
-      cancelBtn.onclick = () => {
-        modal.classList.remove('open');
-        onCancel();
-      };
-
-      modal.onclick = (e) => {
-        if (e.target === modal) {
-          modal.classList.remove('open');
-          onCancel();
-        }
-      };
+      okBtn.onclick     = () => { modal.classList.remove('open'); onConfirm(); };
+      cancelBtn.onclick = () => { modal.classList.remove('open'); onCancel(); };
+      modal.onclick     = (e) => { if (e.target === modal) { modal.classList.remove('open'); onCancel(); } };
     }
+
+    // Init swatches on page load
+    initColorSwatches();
   </script>
 </body>
 
